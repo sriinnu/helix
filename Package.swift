@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "Commander",
+    name: "Helix",
     platforms: [
         .macOS(.v14),
         .iOS(.v17),
@@ -13,21 +13,21 @@ let package = Package(
         .windows(.v10),
     ],
     products: [
-        .library(name: "Commander", targets: ["Commander"]),
+        .library(name: "Helix", targets: ["Helix"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.4.0"),
     ],
     targets: [
         .target(
-            name: "Commander",
-            path: "Sources/Commander",
+            name: "Helix",
+            path: "Sources/Helix",
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
             ]),
         .testTarget(
-            name: "CommanderTests",
-            dependencies: ["Commander"],
-            path: "Tests/CommanderTests"),
+            name: "HelixTests",
+            dependencies: ["Helix"],
+            path: "Tests/HelixTests"),
     ],
     swiftLanguageModes: [.v6])
