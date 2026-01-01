@@ -9,8 +9,6 @@ let package = Package(
         .tvOS(.v17),
         .watchOS(.v10),
         .visionOS(.v1),
-        .linux,
-        .windows(.v10),
     ],
     products: [
         .library(name: "Helix", targets: ["Helix"]),
