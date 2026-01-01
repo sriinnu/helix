@@ -1,0 +1,54 @@
+{
+  "": {
+    "swift-dependencies": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/master.swiftdeps"
+  },
+  "/Users/srinivaspendela/Packages/Helix/Sources/Helix/CommandParser.swift": {
+    "dependencies": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/CommandParser.d",
+    "object": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/CommandParser.swift.o",
+    "swiftmodule": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/CommandParser~partial.swiftmodule",
+    "swift-dependencies": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/CommandParser.swiftdeps",
+    "diagnostics": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/CommandParser.dia"
+  },
+  "/Users/srinivaspendela/Packages/Helix/Sources/Helix/CommandSignature.swift": {
+    "dependencies": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/CommandSignature.d",
+    "object": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/CommandSignature.swift.o",
+    "swiftmodule": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/CommandSignature~partial.swiftmodule",
+    "swift-dependencies": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/CommandSignature.swiftdeps",
+    "diagnostics": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/CommandSignature.dia"
+  },
+  "/Users/srinivaspendela/Packages/Helix/Sources/Helix/ExpressibleFromArgument.swift": {
+    "dependencies": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/ExpressibleFromArgument.d",
+    "object": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/ExpressibleFromArgument.swift.o",
+    "swiftmodule": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/ExpressibleFromArgument~partial.swiftmodule",
+    "swift-dependencies": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/ExpressibleFromArgument.swiftdeps",
+    "diagnostics": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/ExpressibleFromArgument.dia"
+  },
+  "/Users/srinivaspendela/Packages/Helix/Sources/Helix/NameSpecification.swift": {
+    "dependencies": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/NameSpecification.d",
+    "object": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/NameSpecification.swift.o",
+    "swiftmodule": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/NameSpecification~partial.swiftmodule",
+    "swift-dependencies": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/NameSpecification.swiftdeps",
+    "diagnostics": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/NameSpecification.dia"
+  },
+  "/Users/srinivaspendela/Packages/Helix/Sources/Helix/ParsableCommand.swift": {
+    "dependencies": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/ParsableCommand.d",
+    "object": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/ParsableCommand.swift.o",
+    "swiftmodule": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/ParsableCommand~partial.swiftmodule",
+    "swift-dependencies": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/ParsableCommand.swiftdeps",
+    "diagnostics": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/ParsableCommand.dia"
+  },
+  "/Users/srinivaspendela/Packages/Helix/Sources/Helix/Program.swift": {
+    "dependencies": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/Program.d",
+    "object": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/Program.swift.o",
+    "swiftmodule": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/Program~partial.swiftmodule",
+    "swift-dependencies": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/Program.swiftdeps",
+    "diagnostics": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/Program.dia"
+  },
+  "/Users/srinivaspendela/Packages/Helix/Sources/Helix/PropertyWrappers.swift": {
+    "dependencies": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/PropertyWrappers.d",
+    "object": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/PropertyWrappers.swift.o",
+    "swiftmodule": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/PropertyWrappers~partial.swiftmodule",
+    "swift-dependencies": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/PropertyWrappers.swiftdeps",
+    "diagnostics": "/Users/srinivaspendela/Packages/Helix/.build/arm64-apple-macosx/debug/Helix.build/PropertyWrappers.dia"
+  }
+}
