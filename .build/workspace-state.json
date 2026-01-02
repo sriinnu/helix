@@ -10,7 +10,7 @@
           "identity" : "swift-docc-plugin",
           "kind" : "remoteSourceControl",
           "location" : "https://github.com/apple/swift-docc-plugin",
-          "name" : "SwiftDocCPlugin"
+          "name" : "swift-docc-plugin"
         },
         "state" : {
           "checkoutState" : {
@@ -27,7 +27,7 @@
           "identity" : "swift-docc-symbolkit",
           "kind" : "remoteSourceControl",
           "location" : "https://github.com/swiftlang/swift-docc-symbolkit",
-          "name" : "SymbolKit"
+          "name" : "swift-docc-symbolkit"
         },
         "state" : {
           "checkoutState" : {
