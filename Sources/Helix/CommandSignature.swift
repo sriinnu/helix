@@ -80,11 +80,13 @@ public struct OptionDefinition: Sendable, Equatable {
     public let label: String
     public let names: [CommanderName]
     public let help: String?
+    public let envVar: String?
 
-    public init(label: String, names: [CommanderName], help: String?) {
+    public init(label: String, names: [CommanderName], help: String?, envVar: String? = nil) {
         self.label = label
         self.names = names
         self.help = help
+        self.envVar = envVar
     }
 }
 

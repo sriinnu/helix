@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="helixGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F05138;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF6B35;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="helixGradientDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#C23A28;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E85A24;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="64" fill="#1a1a2e"/>
+
+  <!-- Helix DNA Strand - Abstract Representation -->
+  <g transform="translate(256, 256)">
+    <!-- Main Helix Curves -->
+    <path d="M-80 -180 Q-120 -90 -80 0 Q-40 90 -80 180"
+          fill="none" stroke="url(#helixGradient)" stroke-width="32" stroke-linecap="round"/>
+
+    <path d="M80 -180 Q120 -90 80 0 Q40 90 80 180"
+          fill="none" stroke="url(#helixGradientDark)" stroke-width="32" stroke-linecap="round"/>
+
+    <!-- Connecting Rungs -->
+    <line x1="-60" y1="-135" x2="60" y2="-135" stroke="#ffffff" stroke-width="12" stroke-opacity="0.4"/>
+    <line x1="-60" y1="-45" x2="60" y2="-45" stroke="#ffffff" stroke-width="12" stroke-opacity="0.6"/>
+    <line x1="-60" y1="45" x2="60" y2="45" stroke="#ffffff" stroke-width="12" stroke-opacity="0.6"/>
+    <line x1="-60" y1="135" x2="60" y2="135" stroke="#ffffff" stroke-width="12" stroke-opacity="0.4"/>
+
+    <!-- Center Dot (Nucleus/Command Center) -->
+    <circle cx="0" cy="0" r="24" fill="#ffffff"/>
+    <circle cx="0" cy="0" r="14" fill="#1a1a2e"/>
+
+    <!-- Top Terminal Point -->
+    <circle cx="-80" cy="-180" r="16" fill="url(#helixGradient)"/>
+
+    <!-- Bottom Terminal Point -->
+    <circle cx="80" cy="180" r="16" fill="url(#helixGradientDark)"/>
+  </g>
+
+  <!-- "H" Symbol (Optional text at bottom) -->
+  <text x="256" y="440" text-anchor="middle" font-family="SF Mono, Menlo, Monaco, monospace"
+        font-size="48" font-weight="bold" fill="#ffffff" opacity="0.9">HELIX</text>
+</svg>

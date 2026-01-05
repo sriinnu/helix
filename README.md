@@ -1,42 +1,42 @@
 # Helix
 
 <p align="center">
+  <img src="logo.svg" alt="Helix Logo" width="200" />
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Swift-6.0+-orange.svg" />
-  <img src="https://img.shields.io/badge/Platform-macOS%20%7C%20iOS%20%7C%20tvOS%20%7C%20watchOS%20%7C%20visionOS-lightgrey.svg" />
+  <img src="https://img.shields.io/badge/Platform-macOS%20%7C%20iOS%20%7C%20Windows%20%7C%20WASM-lightgrey.svg" />
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
+  <img src="https://img.shields.io/badge/Tests-54-green.svg" />
 </p>
 
 A modern, declarative command-line parsing framework for Swift that uses property wrappers to create elegant CLI interfaces. Inspired by Swift ArgumentParser but with a lighter footprint and simplified API.
 
-## ✨ Features
+---
 
-### Core Capabilities
-- 🎯 **Declarative Syntax**: Use property wrappers (`@Option`, `@Argument`, `@Flag`, `@OptionGroup`) for clean, readable command definitions
-- 🔄 **Subcommands**: Built-in support for nested commands with default subcommand routing and command hierarchies
-- 🌍 **Cross-Platform**: Works seamlessly on macOS 14+, iOS 17+, tvOS 17+, watchOS 10+, and visionOS 1+
-- 📦 **Type-Safe**: Leverages Swift's type system for automatic argument parsing and validation
-- 🚀 **Zero Dependencies**: Pure Swift implementation with no external dependencies
-- 🔍 **Reflection-Based**: Automatic command signature building using Swift's Mirror API
-- 🔤 **Smart Naming**: Automatic kebab-case conversion from camelCase property names
-- 🛡️ **Swift 6 Ready**: Full concurrency support with `Sendable` conformance throughout
+## Table of Contents
 
-### Advanced Features
-- 🎨 **Custom Validation**: Build sophisticated validation logic with clear error messages
-- 🌐 **Environment Variables**: Seamless integration with environment-based configuration
-- 📋 **Help Generation**: Automatic, beautifully formatted help text with examples
-- 🔧 **Extensible Types**: Support for any `ExpressibleFromArgument` conforming type
-- 🎭 **Command Aliases**: Define multiple names for the same command or option
-- 🔗 **Composable Options**: Group related options with `@OptionGroup` for reusability
-- ⚡ **Performance**: Minimal overhead with efficient parsing and validation
-- 🧪 **Testable**: Easy-to-test command structures with dependency injection support
-- 📊 **Rich Error Messages**: Detailed, actionable error messages with suggestions
-- 🎯 **Default Values**: Intelligent default value handling with fallback strategies
-- 🔐 **Secure Input**: Built-in support for sensitive data handling
-- 📈 **Progress Tracking**: Integration points for progress indicators and logging
+1. [Quick Start](#quick-start)
+2. [Architecture](#architecture)
+3. [Property Wrappers](#property-wrappers)
+4. [Custom Types](#custom-types)
+5. [Validation](#validation)
+6. [Subcommands](#subcommands)
+7. [Cross-Platform Support](#cross-platform-support)
+8. [Testing](#testing)
+9. [API Reference](#api-reference)
+10. [Migration Guide](#migration-guide)
+11. [Best Practices](#best-practices)
+12. [Performance](#performance)
+13. [FAQ](#faq)
+14. [Contributing](#contributing)
 
-## 📦 Installation
+---
 
-### Swift Package Manager
+## Quick Start
+
+### Installation
 
 Add Helix to your `Package.swift`:
 
@@ -50,112 +50,140 @@ Then add it to your target:
 
 ```swift
 .target(
-    name: "YourTarget",
+    name: "YourTool",
     dependencies: ["Helix"]
 )
 ```
 
-## 🚀 Quick Start
-
-### Basic Command
+### Your First Command
 
 ```swift
 import Helix
 
-struct HelloCommand: ParsableCommand {
-    @Option(help: "Your name")
-    var name: String
-    
+struct GreetCommand: ParsableCommand {
+    @Option(help: "Name to greet")
+    var name: String = "World"
+
     @Flag(help: "Use formal greeting")
     var formal: Bool = false
-    
-    @Argument(help: "Optional message")
-    var message: String?
-    
-    static var commandDescription: CommandDescription {
-        CommandDescription(
-            commandName: "hello",
-            abstract: "Greet someone",
-            discussion: """
-            A friendly greeting command that supports both casual 
-            and formal greetings with optional custom messages.
-            """
-        )
-    }
-    
+
     mutating func run() async throws {
-        let greeting = formal ? "Good day" : "Hello"
-        if let message = message {
-            print("\(greeting), \(name)! \(message)")
-        } else {
-            print("\(greeting), \(name)!")
-        }
+        let greeting = formal ? "Good day, \(name)." : "Hello, \(name)!"
+        print(greeting)
     }
 }
 
-// Run the command
-try await HelloCommand.main(arguments: CommandLine.arguments)
+try await GreetCommand.main()
 ```
 
 **Usage:**
+
 ```bash
-$ hello --name Alice
+$ greet --name Alice
 Hello, Alice!
 
-$ hello --name Bob --formal
-Good day, Bob!
-
-$ hello --name Carol "Hope you're doing well"
-Hello, Carol! Hope you're doing well
+$ greet --name Bob --formal
+Good day, Bob.
 ```
 
-## 🎨 Property Wrappers
+---
 
-### `@Option` - Named Options with Values
+## Architecture
+
+### Execution Flow
+
+```
+User Input (argv)
+        ↓
+Program.resolve() - Command/subcommand resolution
+        ↓
+CommandParser.parse() - Tokenization and parsing
+        ↓
+bindValues() - Bind parsed values to command properties
+        ↓
+validate() - Optional validation
+        ↓
+run() - Execute command logic
+```
+
+### Component Overview
+
+| Component | Purpose |
+|-----------|---------|
+| `ParsableCommand` | Main protocol all commands conform to |
+| `@Option` | Named parameters (`--output file.txt`) |
+| `@Argument` | Positional parameters (`file.txt`) |
+| `@Flag` | Boolean switches (`--verbose`) |
+| `@OptionGroup` | Reusable option sets |
+| `CommandSignature` | Metadata about command parameters |
+| `CommandParser` | Tokenizes and parses arguments |
+| `Program` | Routes argv to commands |
+| `PlatformContext` | Platform abstraction layer |
+| `PlatformPath` | Cross-platform file paths |
+
+### How It Works
+
+1. **Reflection-Based Discovery**: Helix uses Swift's `Mirror` API to automatically discover `@Option`, `@Argument`, and `@Flag` properties on your command types.
+
+2. **Two-Phase Parsing**:
+   - **Resolution**: `Program.resolve()` identifies which command/subcommand to run
+   - **Parsing**: `CommandParser.parse()` extracts values from argv
+
+3. **Property Binding**: Parsed values are bound to command properties using reflection.
+
+---
+
+## Property Wrappers
+
+### `@Option` - Named Parameters
 
 Options are named parameters that accept values:
 
 ```swift
-// Simple option (generates --output)
+// Required option (no default)
 @Option(help: "Output file path")
 var output: String
 
-// Short and long names (generates -v/--verbose)
-@Option(name: .shortAndLong, help: "Verbosity level")
+// Optional option (with default)
+@Option(help: "Verbosity level (0-5)")
 var verbose: Int = 0
 
+// Short and long names
+@Option(name: .shortAndLong, help: "Configuration file")
+var config: String = "config.json"
+
 // Custom names
-@Option(name: .customLong("out-dir"), help: "Output directory")
+@Option(name: .short('o'), help: "Output file")
+var outputFile: String
+
+@Option(name: .longName("output-dir"), help: "Directory for output")
 var outputDirectory: String
 
-// Optional values with defaults
-@Option(help: "Maximum retries")
-var maxRetries: Int = 3
+// Multiple names
+@Option(names: [.short('v'), .longName("verbose")], help: "Verbose output")
+var verboseMode: Bool = false
 
-// Arrays (comma-separated values)
-@Option(help: "Tags to apply")
-var tags: [String] = []
+// Environment variable fallback
+@Option(name: .shortAndLong, envVar: "API_KEY", help: "API key")
+var apiKey: String?
 ```
 
-### `@Argument` - Positional Arguments
+### `@Argument` - Positional Parameters
 
 Arguments are parsed by position, not by name:
 
 ```swift
-// Required positional argument
-@Argument(help: "Input file")
+// Required argument
+@Argument(help: "Input file to process")
 var input: String
 
-// Optional positional argument
-@Argument(help: "Optional config file")
-var config: String?
+// Optional argument
+@Argument(help: "Output file (defaults to stdout)")
+var output: String?
 
-// Multiple positional arguments are parsed in order
-@Argument(help: "Source file")
-var source: String
-
-@Argument(help: "Destination file")
-var destination: String
+// Multiple arguments (parsed in order)
+@Argument(help: "Source files")
+var sources: [String]
 ```
 
 ### `@Flag` - Boolean Switches
@@ -163,649 +191,761 @@ var destination: String
 Flags are boolean options that don't take values:
 
 ```swift
-// Simple flag (generates --debug)
+// Simple flag
 @Flag(help: "Enable debug mode")
 var debug: Bool = false
 
-// Multiple names for the same flag
-@Flag(names: [.short("v"), .long("verbose")], help: "Verbose output")
+// Short form
+@Flag(name: .short('v'), help: "Verbose output")
 var verbose: Bool = false
 
-// Inverted flag (true by default, false when specified)
-@Flag(help: "Disable colors")
-var noColor: Bool = false
+// Long form
+@Flag(name: .longName("verbose"), help: "Verbose output")
+var verbose: Bool = false
+
+// Combined short
+@Flag(name: .shortAndLong, help: "Force overwrite")
+var force: Bool = false
 ```
 
-### `@OptionGroup` - Grouped Options
+### `@OptionGroup` - Reusable Option Sets
 
 Group related options together:
 
 ```swift
 struct LoggingOptions: HelixParsable {
-    @Option(help: "Log level")
-    var logLevel: String = "info"
-    
+    @Option(help: "Log level (debug|info|warn|error)")
+    var level: String = "info"
+
     @Option(help: "Log file path")
-    var logFile: String?
-    
-    @Flag(help: "Enable timestamps")
-    var timestamps: Bool = false
+    var file: String?
+
+    @Flag(help: "Include timestamps")
+    var timestamps: Bool = true
 }
 
 struct MyCommand: ParsableCommand {
     @OptionGroup
     var logging: LoggingOptions
-    
+
     mutating func run() async throws {
-        print("Log level: \(logging.logLevel)")
+        print("Logging at level: \(logging.level)")
     }
 }
 ```
 
-## 🔧 Advanced Features
+### Name Specification Options
 
-### Subcommands
+| Specification | Generated Names | Example |
+|--------------|-----------------|---------|
+| `.automatic` | `--property-name` | `--output-file` |
+| `.short('o')` | `-o` | `-o file.txt` |
+| `.longName("out")` | `--out` | `--out file.txt` |
+| `.shortAndLong` | `-o`, `--output` | `-o file.txt` / `--output file.txt` |
+| `.customShort('x')` | `-x` | `-xvalue` |
+| `.customLong("output")` | `--output` | `--output=value` |
 
-Create powerful CLI tools with nested commands:
+---
+
+## Custom Types
+
+### Conforming to `ExpressibleFromArgument`
+
+Add support for custom types by conforming to `ExpressibleFromArgument`:
+
+```swift
+enum LogLevel: String, ExpressibleFromArgument {
+    case debug, info, warning, error
+
+    init?(argument: String) {
+        self.init(rawValue: argument.lowercased())
+    }
+}
+
+// Usage
+@Option(help: "Log level")
+var logLevel: LogLevel = .info
+```
+
+### Complex Types
+
+```swift
+struct ServerAddress: ExpressibleFromArgument {
+    let host: String
+    let port: Int
+
+    init?(argument: String) {
+        let parts = argument.split(separator: ":", maxSplits: 1)
+        guard parts.count == 2,
+              let port = Int(parts[1]) else {
+            return nil
+        }
+        self.host = String(parts[0])
+        self.port = port
+    }
+}
+
+// Usage
+@Option(help: "Server address (host:port)")
+var server: ServerAddress
+```
+
+### Built-in Type Support
+
+Helix supports these types out of the box:
+
+| Type | Notes |
+|------|-------|
+| `String` | Direct assignment |
+| `Substring` | Converted from String |
+| `Int`, `Int32`, `Int64` | Base-10 parsing |
+| `Double`, `Float` | Decimal parsing |
+| `Bool` | `true/false/t/1/yes/y` / `false/f/0/no/n` |
+| `Optional<T>` | Wraps any supported type |
+| `Array<T>` | Comma-separated values |
+
+---
+
+## Validation
+
+Add custom validation logic with the `validate()` method:
+
+```swift
+struct DeployCommand: ParsableCommand {
+    @Option(help: "Environment (dev|staging|prod)")
+    var environment: String
+
+    @Option(help: "Timeout in seconds (1-300)")
+    var timeout: Int = 60
+
+    @Argument(help: "Service name")
+    var service: String
+
+    mutating func validate() throws {
+        // Validate environment
+        let validEnvironments = ["dev", "staging", "prod"]
+        guard validEnvironments.contains(environment) else {
+            throw ValidationError("Environment must be one of: \(validEnvironments.joined(separator: ", "))")
+        }
+
+        // Validate timeout range
+        guard (1...300).contains(timeout) else {
+            throw ValidationError("Timeout must be between 1 and 300 seconds")
+        }
+
+        // Cross-field validation
+        if environment == "prod" && timeout < 30 {
+            throw ValidationError("Production deployments require at least 30 second timeout")
+        }
+    }
+
+    mutating func run() async throws {
+        print("Deploying \(service) to \(environment) with \(timeout)s timeout")
+    }
+}
+```
+
+### ValidationError
+
+```swift
+throw ValidationError("Custom error message")
+
+// Or use CustomStringConvertible types
+struct AppError: Error, CustomStringConvertible {
+    var description: String
+}
+
+throw AppError(description: "Something went wrong")
+```
+
+---
+
+## Subcommands
+
+Create hierarchical CLI tools with nested commands:
 
 ```swift
 struct GitCommand: ParsableCommand {
     static var commandDescription: CommandDescription {
         CommandDescription(
             commandName: "git",
-            abstract: "Distributed version control system",
+            abstract: "Distributed version control",
+            discussion: "Git is a free and open source distributed version control system.",
             subcommands: [
-                CloneCommand.descriptor,
-                CommitCommand.descriptor,
-                PushCommand.descriptor
+                CloneCommand.self,
+                CommitCommand.self,
+                PushCommand.self,
+                PullCommand.self
             ],
-            defaultSubcommand: "clone" // Optional default
+            defaultSubcommand: nil  // No default - user must specify
         )
     }
 }
 
 struct CloneCommand: ParsableCommand {
     @Argument(help: "Repository URL")
-    var url: String
-    
-    @Option(help: "Clone into directory")
+    var repository: String
+
+    @Option(name: .shortAndLong, help: "Directory to clone into")
     var directory: String?
-    
+
     static var commandDescription: CommandDescription {
         CommandDescription(
             commandName: "clone",
-            abstract: "Clone a repository into a new directory"
+            abstract: "Clone a repository"
         )
     }
-    
+
     mutating func run() async throws {
-        print("Cloning \(url)...")
+        print("Cloning \(repository)...")
     }
 }
 ```
 
 **Usage:**
+
 ```bash
-$ git clone https://github.com/user/repo
-$ git clone --directory myproject https://github.com/user/repo
+$ git clone https://github.com/user/repo --directory myproject
+$ git commit -m "Fix bug"
+$ git push origin main
 ```
 
-### Custom Types
+### Default Subcommand
 
-Extend Helix to parse your custom types:
+Automatically route to a subcommand when none specified:
 
 ```swift
-enum LogLevel: String, ExpressibleFromArgument {
-    case debug, info, warning, error
-    
-    init?(argument: String) {
-        self.init(rawValue: argument.lowercased())
+struct ToolCommand: ParsableCommand {
+    static var commandDescription: CommandDescription {
+        CommandDescription(
+            commandName: "tool",
+            subcommands: [BuildCommand.self, TestCommand.self],
+            defaultSubcommand: BuildCommand.self  // Auto-routes to 'build'
+        )
     }
 }
+```
 
-struct Config: ExpressibleFromArgument {
-    let host: String
-    let port: Int
-    
-    init?(argument: String) {
-        let parts = argument.split(separator: ":")
-        guard parts.count == 2,
-              let port = Int(parts[1]) else { return nil }
-        self.host = String(parts[0])
-        self.port = port
-    }
-}
+---
 
-struct ServerCommand: ParsableCommand {
-    @Option(help: "Log level (debug, info, warning, error)")
-    var logLevel: LogLevel = .info
-    
-    @Option(help: "Server address (host:port)")
-    var server: Config
-    
+## Cross-Platform Support
+
+Helix runs on multiple platforms with a unified API:
+
+### Supported Platforms
+
+| Platform | Minimum Version | Status |
+|----------|-----------------|--------|
+| macOS | 14.0+ | ✅ Full Support |
+| iOS | 17.0+ | ✅ Full Support |
+| tvOS | 17.0+ | ✅ Full Support |
+| watchOS | 10.0+ | ✅ Full Support |
+| visionOS | 1.0+ | ✅ Full Support |
+| Windows | 10+ | ✅ Full Support |
+| WASM | v0 | ✅ Full Support |
+
+### Platform Context
+
+Access platform-specific functionality through `PlatformContext`:
+
+```swift
+import Helix
+
+struct PlatformCommand: ParsableCommand {
     mutating func run() async throws {
-        print("Starting server at \(server.host):\(server.port)")
-        print("Log level: \(logLevel)")
+        // Get arguments
+        let args = PlatformContext.current.arguments
+        print("Arguments: \(args)")
+
+        // Get environment variable
+        if let path = PlatformContext.current.environmentVariable("PATH") {
+            print("PATH: \(path)")
+        }
+
+        // Current working directory
+        let cwd = PlatformContext.current.currentWorkingDirectory
+        print("Working directory: \(cwd)")
     }
 }
 ```
 
-### Validation
+### PlatformPath
 
-Add custom validation logic:
+Cross-platform file path handling:
 
 ```swift
-struct DownloadCommand: ParsableCommand {
-    @Option(help: "Number of concurrent downloads")
-    var concurrency: Int = 4
-    
-    @Argument(help: "URL to download")
-    var url: String
-    
-    mutating func validate() throws {
-        guard concurrency > 0 && concurrency <= 10 else {
-            throw ValidationError("Concurrency must be between 1 and 10")
-        }
-        
-        guard url.hasPrefix("http://") || url.hasPrefix("https://") else {
-            throw ValidationError("URL must start with http:// or https://")
-        }
+let path = PlatformPath("/home/user/documents/file.txt")
+
+// Platform-aware operations
+#if os(Windows)
+print(path.string)  // Uses backslashes
+#else
+print(path.string)  // Uses forward slashes
+#endif
+
+// Path operations
+let parent = path.deletingExtension  // /home/user/documents/file
+let ext = path.extension              // "txt"
+let joined = path.appending("data")   // /home/user/documents/file.txt/data
+
+// Environment variable expansion
+let expanded = path.expandingEnvironmentVariables(["HOME": "/home/user"])
+
+// Home directory
+let home = PlatformPath.homeDirectory
+```
+
+### Custom Platform Context
+
+Create mock contexts for testing:
+
+```swift
+let mockContext = MockPlatformContext(
+    arguments: ["test", "--verbose"],
+    environment: ["TEST_MODE": "1"],
+    currentDirectory: "/test/workspace"
+)
+
+// Use in tests
+let args = mockContext.arguments  // ["test", "--verbose"]
+let env = mockContext.environment  // ["TEST_MODE": "1"]
+```
+
+---
+
+## Testing
+
+### Running Tests
+
+```bash
+swift test
+```
+
+### Test Coverage
+
+| Test File | Coverage |
+|-----------|----------|
+| `CommandParserTests.swift` | Tokenization, parsing, options, flags |
+| `PropertyWrappersTests.swift` | Wrapper initialization and registration |
+| `PlatformContextTests.swift` | Platform abstraction |
+| `PlatformPathTests.swift` | Path operations |
+| `StdioTests.swift` | I/O stream handling |
+
+### Mock Platform Context
+
+Use `MockPlatformContext` for deterministic testing:
+
+```swift
+let ctx = MockPlatformContext(
+    arguments: ["cmd", "arg1", "arg2"],
+    environment: ["KEY": "value"],
+    currentDirectory: "/test"
+)
+
+// Verify environment
+XCTAssertEqual(ctx.environmentVariable("KEY"), "value")
+
+// Verify arguments
+XCTAssertEqual(ctx.arguments, ["arg1", "arg2"])
+```
+
+### Unit Testing Commands
+
+```swift
+import XCTest
+@testable import Helix
+
+final class MyCommandTests: XCTestCase {
+    func testParsing() throws {
+        var command = MyCommand()
+
+        // Manually set properties for testing
+        command.name = "test"
+        command.count = 5
+
+        XCTAssertEqual(command.name, "test")
+        XCTAssertEqual(command.count, 5)
     }
-    
+
+    func testValidation() throws {
+        var command = MyCommand()
+        command.value = -1  // Invalid
+
+        XCTAssertThrowsError(try command.validate())
+    }
+}
+```
+
+---
+
+## API Reference
+
+### ParsableCommand Protocol
+
+```swift
+@MainActor
+public protocol ParsableCommand: Sendable {
+    /// Required initializer
+    init()
+
+    /// Command metadata (optional, defaults to auto-generated)
+    static var commandDescription: CommandDescription { get }
+
+    /// Main command logic
+    mutating func run() async throws
+
+    /// Validation (optional)
+    mutating func validate() throws
+}
+
+extension ParsableCommand {
+    /// Run with arguments from current platform
+    static func main() async throws
+
+    /// Run with custom arguments
+    static func main(arguments: [String]) async throws
+
+    /// Create a descriptor for this command
+    static var descriptor: CommandDescriptor { get }
+}
+```
+
+### CommandDescription
+
+```swift
+public struct CommandDescription: Sendable {
+    public var commandName: String?
+    public var abstract: String
+    public var discussion: String?
+    public var version: String?
+    public var subcommands: [any ParsableCommand.Type]
+    public var defaultSubcommand: (any ParsableCommand.Type)?
+    public var showHelpOnEmptyInvocation: Bool
+}
+```
+
+### HelixError
+
+```swift
+public enum HelixError: Error, Sendable {
+    case missingCommand
+    case unknownCommand(String)
+    case missingSubcommand(command: String)
+    case unknownSubcommand(command: String, name: String)
+    case parsingError(String)
+    case missingEnvironmentVariable(String)
+    case optionNotBound(String)
+    case argumentNotBound(String)
+    case validationError(String)
+}
+```
+
+### ExitCode
+
+```swift
+public struct ExitCode: Error, Equatable, Sendable {
+    public let rawValue: Int32
+    public static let success = ExitCode(0)
+    public static let failure = ExitCode(1)
+}
+```
+
+### ValidationError
+
+```swift
+public struct ValidationError: Error, LocalizedError, Sendable {
+    public init(_ message: String)
+    public var errorDescription: String? { message }
+}
+```
+
+---
+
+## Migration Guide
+
+### From Swift ArgumentParser
+
+| ArgumentParser | Helix |
+|----------------|-------|
+| `ArgumentParser` | `Program` |
+| `ParsableCommand` | `ParsableCommand` |
+| `Option` | `@Option` |
+| `Argument` | `@Argument` |
+| `Flag` | `@Flag` |
+| `OptionGroup` | `@OptionGroup` |
+| `validate()` | `validate()` |
+
+### Key Differences
+
+1. **Command Name**: ArgumentParser infers from struct name; Helix does too but requires `commandName` in `CommandDescription`.
+
+2. **Subcommand Registration**: ArgumentParser uses nested types; Helix uses `subcommands` array in `CommandDescription`.
+
+3. **Main Entry**: ArgumentParser uses `@main` attribute; Helix uses `try await MyCommand.main()`.
+
+### Example Migration
+
+**Before (ArgumentParser):**
+
+```swift
+import ArgumentParser
+
+struct Math: ParsableCommand {
+    @Option(name: .short)
+    var operation: String
+
+    @Argument
+    var numbers: [Int]
+
+    func run() throws {
+        // ...
+    }
+}
+```
+
+**After (Helix):**
+
+```swift
+import Helix
+
+struct MathCommand: ParsableCommand {
+    @Option(name: .short('o'), help: "Operation")
+    var operation: String
+
+    @Argument(help: "Numbers to process")
+    var numbers: [Int]
+
+    static var commandDescription: CommandDescription {
+        CommandDescription(
+            commandName: "math",
+            abstract: "Perform mathematical operations"
+        )
+    }
+
     mutating func run() async throws {
-        print("Downloading \(url) with \(concurrency) connections")
+        // ...
     }
 }
 ```
 
-### Error Handling
+---
 
-Handle errors gracefully with exit codes:
+## Best Practices
+
+### 1. Command Organization
 
 ```swift
-struct ProcessCommand: ParsableCommand {
+// Group related commands
+enum Database {
+    struct MigrateCommand: ParsableCommand { /* ... */ }
+    struct SeedCommand: ParsableCommand { /* ... */ }
+    struct BackupCommand: ParsableCommand { /* ... */ }
+}
+
+// Or use namespaces
+struct CLI {
+    struct Init: ParsableCommand { /* ... */ }
+    struct Build: ParsableCommand { /* ... */ }
+    struct Test: ParsableCommand { /* ... */ }
+}
+```
+
+### 2. Error Handling
+
+```swift
+enum CLIError: Error, CustomStringConvertible {
+    case fileNotFound(String)
+    case invalidConfig(String)
+    case networkError(Error)
+
+    var description: String {
+        switch self {
+        case .fileNotFound(let path):
+            return "File not found: \(path)"
+        case .invalidConfig(let message):
+            return "Invalid configuration: \(message)"
+        case .networkError(let error):
+            return "Network error: \(error.localizedDescription)"
+        }
+    }
+}
+
+struct MyCommand: ParsableCommand {
     mutating func run() async throws {
         do {
-            try await processFiles()
-        } catch let error as FileError {
-            print("Error: \(error.localizedDescription)")
+            try await performOperation()
+        } catch let error as CLIError {
+            print("Error: \(error)")
             throw ExitCode.failure
         }
     }
 }
 ```
 
-## 📱 Platform Support
-
-| Platform | Minimum Version | Status |
-|----------|----------------|---------|
-| macOS | 14.0+ | ✅ Fully Supported |
-| iOS | 17.0+ | ✅ Fully Supported |
-| tvOS | 17.0+ | ✅ Fully Supported |
-| watchOS | 10.0+ | ✅ Fully Supported |
-| visionOS | 1.0+ | ✅ Fully Supported |
-
-## 🎯 Real-World Examples
-
-### File Processor
+### 3. Reusable Option Groups
 
 ```swift
-struct ProcessCommand: ParsableCommand {
-    @Argument(help: "Files to process")
-    var files: [String]
-    
-    @Option(help: "Output format")
-    var format: String = "json"
-    
-    @Flag(help: "Overwrite existing files")
+struct CommonOptions: HelixParsable {
+    @Flag(name: .shortAndLong, help: "Verbose output")
+    var verbose: Bool = false
+
+    @Option(name: .short('o'), help: "Output file")
+    var output: String?
+
+    @Flag(name: .short('f'), help: "Force overwrite")
     var force: Bool = false
-    
-    @Flag(help: "Verbose output")
-    var verbose: Bool = false
-    
-    static var commandDescription: CommandDescription {
-        CommandDescription(
-            commandName: "process",
-            abstract: "Process files with various options"
-        )
-    }
-    
-    mutating func run() async throws {
-        for file in files {
-            if verbose {
-                print("Processing \(file)...")
-            }
-            // Process file logic here
-        }
-    }
 }
-```
 
-### Build Tool
-
-```swift
 struct BuildCommand: ParsableCommand {
-    @Option(help: "Build configuration")
-    var configuration: String = "debug"
-    
-    @Option(help: "Target platform")
-    var platform: String = "macos"
-    
-    @Flag(help: "Clean before building")
-    var clean: Bool = false
-    
-    @Flag(names: [.short("j"), .long("parallel")], help: "Build in parallel")
-    var parallel: Bool = false
-    
-    static var commandDescription: CommandDescription {
-        CommandDescription(
-            commandName: "build",
-            abstract: "Build the project",
-            discussion: "Builds the project for the specified platform and configuration."
-        )
-    }
-    
-    mutating func run() async throws {
-        if clean {
-            print("Cleaning build directory...")
-        }
-        
-        print("Building for \(platform) in \(configuration) mode...")
-        
-        if parallel {
-            print("Using parallel builds")
-        }
-    }
-}
-```
-
-## �� Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📄 License
-
-Helix is released under the MIT License. See [LICENSE](LICENSE) for details.
-
-## 👤 Author
-
-**Srinivas Pendela**  
-- Email: hello@srinivas.dev  
-- GitHub: [@sriinnu](https://github.com/sriinnu)
-- Package: [Helix](https://github.com/sriinnu/Helix)
-
-## �️ Advanced Utilities
-
-### Environment Variable Support
-
-```swift
-struct ConfigCommand: ParsableCommand {
-    @Option(envVar: "API_KEY", help: "API key for authentication")
-    var apiKey: String?
-    
-    @Option(envVar: "API_ENDPOINT", help: "API endpoint URL")
-    var endpoint: String = "https://api.example.com"
-    
-    mutating func run() async throws {
-        let key = apiKey ?? ProcessInfo.processInfo.environment["API_KEY"] ?? "default"
-        print("Using endpoint: \(endpoint)")
-        print("API Key: \(key.prefix(4))...")
-    }
-}
-```
-
-### Custom Type Parsing
-
-```swift
-enum Priority: String, ExpressibleFromArgument {
-    case low, medium, high, critical
-    
-    var numericValue: Int {
-        switch self {
-        case .low: return 1
-        case .medium: return 2
-        case .high: return 3
-        case .critical: return 4
-        }
-    }
-}
-
-struct Task {
-    let title: String
-    let priority: Priority
-    let dueDate: Date?
-}
-
-extension Task: ExpressibleFromArgument {
-    init?(argument: String) {
-        // Parse from JSON or custom format
-        let parts = argument.split(separator: ":").map(String.init)
-        guard parts.count >= 2,
-              let priority = Priority(rawValue: parts[1]) else {
-            return nil
-        }
-        self.title = parts[0]
-        self.priority = priority
-        self.dueDate = nil
-    }
-}
-```
-
-### Command Composition & Reusability
-
-```swift
-struct CommonOptions: ParsableArguments {
-    @Flag(help: "Enable verbose logging")
-    var verbose: Bool = false
-    
-    @Flag(help: "Suppress all output")
-    var quiet: Bool = false
-    
-    @Option(help: "Output format")
-    var format: OutputFormat = .text
-    
-    func logger() -> Logger {
-        if quiet { return .silent }
-        return verbose ? .verbose : .normal
-    }
-}
-
-struct DeployCommand: ParsableCommand {
     @OptionGroup
     var common: CommonOptions
-    
-    @Option(help: "Deployment target")
-    var target: String
-    
+
+    @Option(help: "Configuration")
+    var config: String = "release"
+
     mutating func run() async throws {
-        let logger = common.logger()
-        logger.log("Deploying to \(target)...")
+        if common.verbose {
+            print("Configuration: \(config)")
+        }
+        // ...
     }
 }
 ```
 
-### Advanced Validation
+---
+
+## Performance
+
+### Parsing Overhead
+
+Helix is designed for minimal overhead:
+
+- **Reflection**: Only used once during descriptor generation
+- **Parsing**: Single-pass tokenizer with O(n) complexity
+- **Memory**: No intermediate allocations beyond argument storage
+
+### Large Argument Counts
+
+Helix handles large argument counts efficiently:
+
+```bash
+# Process thousands of files
+$ process *.txt --output results.json
+```
+
+### Concurrency
+
+All commands run on the main actor (`@MainActor`) for thread safety:
 
 ```swift
-struct CreateUserCommand: ParsableCommand {
-    @Option(help: "User email address")
-    var email: String
-    
-    @Option(help: "User age (18-120)")
-    var age: Int
-    
-    @Option(help: "Password (min 8 characters)")
-    var password: String
-    
-    mutating func validate() throws {
-        // Email validation
-        let emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i
-        guard email.contains(emailRegex) else {
-            throw ValidationError("Invalid email format: \(email)")
-        }
-        
-        // Age validation
-        guard (18...120).contains(age) else {
-            throw ValidationError("Age must be between 18 and 120")
-        }
-        
-        // Password strength
-        guard password.count >= 8 else {
-            throw ValidationError("Password must be at least 8 characters")
-        }
-        
-        guard password.contains(where: \.isNumber),
-              password.contains(where: \.isUppercase) else {
-            throw ValidationError("Password must contain numbers and uppercase letters")
-        }
-    }
-    
-    mutating func run() async throws {
-        print("Creating user: \(email)")
-    }
+@MainActor
+public protocol ParsableCommand: Sendable {
+    mutating func run() async throws
 }
 ```
 
-### Interactive Prompts
+---
 
-```swift
-struct InteractiveSetupCommand: ParsableCommand {
-    mutating func run() async throws {
-        // Prompt for missing information
-        print("Enter project name: ", terminator: "")
-        let projectName = readLine() ?? "MyProject"
-        
-        print("Select language (swift/kotlin/rust): ", terminator: "")
-        let language = readLine() ?? "swift"
-        
-        print("Enable CI/CD? (y/n): ", terminator: "")
-        let enableCI = readLine()?.lowercased() == "y"
-        
-        print("\nCreating project '\(projectName)' with \(language)...")
-        if enableCI {
-            print("Setting up CI/CD pipeline...")
-        }
-    }
-}
-```
+## FAQ
 
-### Progress Reporting
-
-```swift
-struct DownloadCommand: ParsableCommand {
-    @Argument(help: "URLs to download")
-    var urls: [String]
-    
-    @Flag(help: "Show progress bar")
-    var progress: Bool = false
-    
-    mutating func run() async throws {
-        for (index, url) in urls.enumerated() {
-            if progress {
-                print("[\(index + 1)/\(urls.count)] Downloading \(url)...")
-            }
-            
-            // Simulate download with progress
-            for percent in stride(from: 0, through: 100, by: 10) {
-                if progress {
-                    print("\r  Progress: \(percent)%", terminator: "")
-                    try await Task.sleep(nanoseconds: 100_000_000)
-                }
-            }
-            if progress { print("\n  ✓ Complete") }
-        }
-    }
-}
-```
-
-### Configuration File Support
-
-```swift
-struct ConfigFileCommand: ParsableCommand {
-    @Option(help: "Path to configuration file")
-    var config: String = "config.json"
-    
-    @OptionGroup
-    var options: CommonOptions
-    
-    mutating func run() async throws {
-        // Load from file
-        let fileConfig = try loadConfig(from: config)
-        
-        // Merge with CLI options (CLI takes precedence)
-        let finalConfig = fileConfig.merging(cliOptions: options)
-        
-        print("Configuration loaded: \(finalConfig)")
-    }
-    
-    func loadConfig(from path: String) throws -> Config {
-        let data = try Data(contentsOf: URL(fileURLWithPath: path))
-        return try JSONDecoder().decode(Config.self, from: data)
-    }
-}
-```
-
-### Command Middleware/Hooks
+### Q: How do I handle secret values?
 
 ```swift
 struct SecureCommand: ParsableCommand {
-    @Option(help: "Authentication token")
-    var token: String?
-    
+    @Option(help: "API key (prefer using env var)")
+    var apiKey: String?
+
     mutating func run() async throws {
-        // Pre-execution hook
-        try await authenticate()
-        
-        // Main logic
-        try await execute()
-        
-        // Post-execution hook
-        await cleanup()
-    }
-    
-    func authenticate() async throws {
-        guard let token = token ?? ProcessInfo.processInfo.environment["AUTH_TOKEN"] else {
-            throw AuthError.missingToken
-        }
-        // Verify token
-        print("Authenticated successfully")
-    }
-    
-    func execute() async throws {
-        print("Executing secure operation...")
-    }
-    
-    func cleanup() async {
-        print("Cleaning up resources...")
+        let key = apiKey ?? PlatformContext.current.environmentVariable("API_KEY") ?? ""
+        // Use key...
     }
 }
 ```
 
-### Testing Support
+### Q: Can I use Helix in a synchronous context?
+
+Yes, commands can be synchronous if you don't need async:
 
 ```swift
-import XCTest
-@testable import Helix
+struct SyncCommand: ParsableCommand {
+    @Option(help: "Name")
+    var name: String
 
-class CommandTests: XCTestCase {
-    func testBasicParsing() throws {
-        var command = HelloCommand()
-        try command.parse(["--name", "Alice", "--count", "3"])
-        
-        XCTAssertEqual(command.name, "Alice")
-        XCTAssertEqual(command.count, 3)
-    }
-    
-    func testValidation() throws {
-        var command = CreateUserCommand()
-        command.email = "invalid-email"
-        
-        XCTAssertThrowsError(try command.validate()) { error in
-            XCTAssertTrue(error is ValidationError)
-        }
-    }
-    
-    func testSubcommands() throws {
-        let program = Program(commands: [GitCommand.self])
-        let result = try program.parse(["git", "clone", "https://example.com/repo.git"])
-        
-        XCTAssertTrue(result is GitCommand.CloneCommand)
+    // run() can be non-throwing and non-async
+    mutating func run() {
+        print("Hello, \(name)!")
     }
 }
 ```
 
-## 📚 Best Practices
+### Q: How do I handle `--help` and `--version`?
 
-### 1. Command Organization
-
-```swift
-// Group related commands under a namespace
-enum Docker {
-    struct RunCommand: ParsableCommand { }
-    struct BuildCommand: ParsableCommand { }
-    struct PushCommand: ParsableCommand { }
-}
-
-// Register in program
-let program = Program(commands: [
-    Docker.RunCommand.self,
-    Docker.BuildCommand.self,
-    Docker.PushCommand.self
-])
-```
-
-### 2. Error Handling
+Help and version support are planned features. Currently, implement manually:
 
 ```swift
-enum AppError: Error, CustomStringConvertible {
-    case fileNotFound(String)
-    case invalidInput(String)
-    case networkError(Error)
-    
-    var description: String {
-        switch self {
-        case .fileNotFound(let path):
-            return "File not found: \(path)"
-        case .invalidInput(let message):
-            return "Invalid input: \(message)"
-        case .networkError(let error):
-            return "Network error: \(error.localizedDescription)"
-        }
-    }
-}
-```
+struct MyCommand: ParsableCommand {
+    @Flag(name: .shortAndLong, help: "Show help")
+    var help: Bool = false
 
-### 3. Dependency Injection
+    @Flag(name: .longName("version"), help: "Show version")
+    var version: Bool = false
 
-```swift
-protocol APIClient {
-    func fetch(from url: String) async throws -> Data
-}
-
-struct FetchCommand: ParsableCommand {
-    @Argument(help: "URL to fetch")
-    var url: String
-    
-    var apiClient: APIClient = URLSessionClient()
-    
     mutating func run() async throws {
-        let data = try await apiClient.fetch(from: url)
-        print("Fetched \(data.count) bytes")
+        if version {
+            print("MyTool version 1.0.0")
+            return
+        }
+
+        if help {
+            print(HelixError.helpText(for: Self.descriptor))
+            return
+        }
+
+        // Normal execution
     }
 }
 ```
 
-## 🎯 Use Cases
+### Q: Can I use Helix with Vapor or other server frameworks?
 
-### Developer Tools
-- Build systems and automation scripts
-- Code generators and scaffolding tools
-- Testing utilities and CI/CD helpers
-- Database migration tools
-- API clients and SDKs
+Yes! Helix can be used alongside any Swift framework:
 
-### System Administration
-- Server management tools
-- Deployment automation
-- Configuration management
-- Log analysis tools
-- Monitoring and alerting
+```swift
+// In a Vapor route
+app.post("run") { req async in
+    let command = MyCommand()
+    try await command.main(arguments: req.body.string.split(separator: " ").map(String.init))
+    return "Done"
+}
+```
 
-### Data Processing
-- ETL pipelines
-- Data validation and transformation
-- File format converters
-- Batch processing tools
+---
 
-### DevOps & Infrastructure
-- Container management
-- Infrastructure as code tools
-- Service orchestration
-- Health check utilities
+## Contributing
 
-## �🙏 Acknowledgments
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-Inspired by Swift's ArgumentParser and Commander, Helix aims to provide a lightweight, modern alternative for command-line parsing in Swift.
+### Areas for Contribution
+
+1. Complete `bindValues()` implementation for full property binding
+2. Shell completion script generation
+3. Help text with ANSI colors
+4. Additional type conformances (URL, UUID, Decimal)
+5. More example commands
+
+---
+
+## License
+
+Helix is released under the MIT License. See [LICENSE](LICENSE) for details.
+
+---
+
+## Acknowledgments
+
+Inspired by:
+- [Swift ArgumentParser](https://github.com/apple/swift-argument-parser)
+- [Commander](https://github.com/kylef/Commander.swift)
 
 ---
 

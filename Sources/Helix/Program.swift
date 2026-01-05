@@ -47,6 +47,13 @@ public enum HelixError: Error, CustomStringConvertible, Sendable, Equatable {
     case missingSubcommand(command: String)
     case unknownSubcommand(command: String, name: String)
     case parsingError(String)
+    case missingEnvironmentVariable(String)
+    case webAssemblyExit(Int32)
+    case optionNotBound(String)
+    case argumentNotBound(String)
+    case validationError(String)
+    case helpRequested
+    case versionRequested
 
     public var description: String {
         switch self {
@@ -60,6 +67,20 @@ public enum HelixError: Error, CustomStringConvertible, Sendable, Equatable {
             "Unknown subcommand '\(name)' for command '\(command)'"
         case let .parsingError(error):
             error
+        case let .missingEnvironmentVariable(name):
+            "Missing environment variable '\(name)'"
+        case let .webAssemblyExit(code):
+            "WebAssembly exit with code \(code)"
+        case let .optionNotBound(type):
+            "Option of type '\(type)' was accessed before being parsed"
+        case let .argumentNotBound(type):
+            "Argument of type '\(type)' was accessed before being parsed"
+        case let .validationError(message):
+            "Validation error: \(message)"
+        case .helpRequested:
+            "Help was requested"
+        case .versionRequested:
+            "Version was requested"
         }
     }
 }
