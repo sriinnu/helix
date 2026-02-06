@@ -43,4 +43,20 @@ final class PlatformContextTests: XCTestCase {
         let ctx = DefaultPlatformContext.shared
         _ = ctx.environment
     }
+
+    #if os(WASI)
+    // MARK: - WASI Platform Context
+
+    func testWebPlatformContextWorkingDirectoryIsRoot() {
+        let ctx = WebPlatformContext()
+        XCTAssertEqual(ctx.currentWorkingDirectory.string, "/")
+    }
+
+    func testWebPlatformContextEnvironmentVariableMatchesProcessInfo() {
+        let ctx = WebPlatformContext()
+        if let (key, value) = ProcessInfo.processInfo.environment.first {
+            XCTAssertEqual(ctx.environmentVariable(key), value)
+        }
+    }
+    #endif
 }

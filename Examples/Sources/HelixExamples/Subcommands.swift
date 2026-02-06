@@ -2,10 +2,9 @@ import Helix
 
 /// A command with subcommands demonstrating hierarchical CLI structure.
 struct ToolCommand: ParsableCommand {
-    static var commandName: String = "tool"
-
     static var commandDescription: CommandDescription {
         CommandDescription(
+            commandName: "tool",
             abstract: "A multi-purpose CLI tool",
             discussion: """
             This demonstrates subcommand support where:
@@ -19,7 +18,7 @@ struct ToolCommand: ParsableCommand {
                 TestCommand.self,
                 DeployCommand.self
             ],
-            defaultSubcommand: "build"
+            defaultSubcommand: BuildCommand.self
         )
     }
 
@@ -31,7 +30,12 @@ struct ToolCommand: ParsableCommand {
 // MARK: - Subcommand: Init
 
 struct InitCommand: ParsableCommand {
-    static var commandName: String = "init"
+    static var commandDescription: CommandDescription {
+        CommandDescription(
+            commandName: "init",
+            abstract: "Initialize a new project"
+        )
+    }
 
     @Option(name: .shortAndLong, help: "Project template")
     var template: String = "default"
@@ -52,7 +56,12 @@ struct InitCommand: ParsableCommand {
 // MARK: - Subcommand: Build
 
 struct BuildCommand: ParsableCommand {
-    static var commandName: String = "build"
+    static var commandDescription: CommandDescription {
+        CommandDescription(
+            commandName: "build",
+            abstract: "Build the project"
+        )
+    }
 
     @Option(name: .shortAndLong, help: "Build configuration")
     var configuration: String = "debug"
@@ -72,7 +81,12 @@ struct BuildCommand: ParsableCommand {
 // MARK: - Subcommand: Test
 
 struct TestCommand: ParsableCommand {
-    static var commandName: String = "test"
+    static var commandDescription: CommandDescription {
+        CommandDescription(
+            commandName: "test",
+            abstract: "Run tests"
+        )
+    }
 
     @Option(name: .shortAndLong, help: "Test filter")
     var filter: String?
@@ -94,7 +108,12 @@ struct TestCommand: ParsableCommand {
 // MARK: - Subcommand: Deploy
 
 struct DeployCommand: ParsableCommand {
-    static var commandName: String = "deploy"
+    static var commandDescription: CommandDescription {
+        CommandDescription(
+            commandName: "deploy",
+            abstract: "Deploy the project"
+        )
+    }
 
     @Option(name: .shortAndLong, help: "Target environment")
     var environment: String = "staging"

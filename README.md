@@ -6,9 +6,9 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Swift-6.0+-orange.svg" />
-  <img src="https://img.shields.io/badge/Platform-macOS%20%7C%20iOS%20%7C%20Windows%20%7C%20WASM-lightgrey.svg" />
+  <img src="https://img.shields.io/badge/Platform-macOS%20%7C%20iOS%20%7C%20tvOS%20%7C%20watchOS%20%7C%20visionOS-lightgrey.svg" />
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-  <img src="https://img.shields.io/badge/Tests-54-green.svg" />
+  <img src="https://img.shields.io/badge/Tests-passing-brightgreen.svg" />
 </p>
 
 A modern, declarative command-line parsing framework for Swift that uses property wrappers to create elegant CLI interfaces. Inspired by Swift ArgumentParser but with a lighter footprint and simplified API.
@@ -61,10 +61,14 @@ Then add it to your target:
 import Helix
 
 struct GreetCommand: ParsableCommand {
-    @Option(help: "Name to greet")
+    static var commandDescription: CommandDescription {
+        CommandDescription(commandName: "greet", abstract: "Print a greeting")
+    }
+
+    @Option(name: .shortAndLong, help: "Name to greet")
     var name: String = "World"
 
-    @Flag(help: "Use formal greeting")
+    @Flag(name: .shortAndLong, help: "Use formal greeting")
     var formal: Bool = false
 
     mutating func run() async throws {
@@ -86,6 +90,8 @@ $ greet --name Bob --formal
 Good day, Bob.
 ```
 
+Note: `ParsedValues` uses property labels (e.g. `logLevel`, `failFast`) as keys, not the kebab-case CLI names.
+
 ---
 
 ## Architecture
@@ -99,7 +105,7 @@ Program.resolve() - Command/subcommand resolution
         ↓
 CommandParser.parse() - Tokenization and parsing
         ↓
-bindValues() - Bind parsed values to command properties
+Binding - automatic property wrapper binding
         ↓
 validate() - Optional validation
         ↓
@@ -129,7 +135,7 @@ run() - Execute command logic
    - **Resolution**: `Program.resolve()` identifies which command/subcommand to run
    - **Parsing**: `CommandParser.parse()` extracts values from argv
 
-3. **Property Binding**: Parsed values are bound to command properties using reflection.
+3. **Property Binding**: Parsed values are automatically bound to your command properties (including `@OptionGroup`).
 
 ---
 
@@ -167,6 +173,8 @@ var verboseMode: Bool = false
 @Option(name: .shortAndLong, envVar: "API_KEY", help: "API key")
 var apiKey: String?
 ```
+
+`envVar` provides environment variable fallback when the option is not provided on the command line.
 
 ### `@Argument` - Positional Parameters
 
@@ -234,6 +242,9 @@ struct MyCommand: ParsableCommand {
 }
 ```
 
+When parsing manually, pass `Self.descriptor.signature.flattened()` to `CommandParser` to include options from option groups.
+`ParsableCommand.main()` already uses flattened signatures; the note above only applies if you instantiate `CommandParser` manually.
+
 ### Name Specification Options
 
 | Specification | Generated Names | Example |
@@ -242,8 +253,10 @@ struct MyCommand: ParsableCommand {
 | `.short('o')` | `-o` | `-o file.txt` |
 | `.longName("out")` | `--out` | `--out file.txt` |
 | `.shortAndLong` | `-o`, `--output` | `-o file.txt` / `--output file.txt` |
-| `.customShort('x')` | `-x` | `-xvalue` |
-| `.customLong("output")` | `--output` | `--output=value` |
+| `.customShort('x')` | `-x` | `-x file.txt` |
+| `.customLong("output")` | `--output` | `--output file.txt` |
+
+Note: `--name=value` and `-o=value` are supported. Joined short option values (e.g. `-ovalue`) are not supported.
 
 ---
 
@@ -302,7 +315,7 @@ Helix supports these types out of the box:
 | `Double`, `Float` | Decimal parsing |
 | `Bool` | `true/false/t/1/yes/y` / `false/f/0/no/n` |
 | `Optional<T>` | Wraps any supported type |
-| `Array<T>` | Comma-separated values |
+| `Array<T>` | Options support comma-separated values and repeated occurrences; positional arrays consume remaining positionals |
 
 ---
 
@@ -410,6 +423,8 @@ $ git commit -m "Fix bug"
 $ git push origin main
 ```
 
+`ParsableCommand.main()` dispatches to subcommands automatically. When you run the executable, you typically do not need to include the root command name as the first argument.
+
 ### Default Subcommand
 
 Automatically route to a subcommand when none specified:
@@ -441,8 +456,10 @@ Helix runs on multiple platforms with a unified API:
 | tvOS | 17.0+ | ✅ Full Support |
 | watchOS | 10.0+ | ✅ Full Support |
 | visionOS | 1.0+ | ✅ Full Support |
-| Windows | 10+ | ✅ Full Support |
-| WASM | v0 | ✅ Full Support |
+| Windows | - | ⚠️ Supported (not covered by CI here) |
+| WASI | - | ⚠️ Supported (not covered by CI here) |
+
+Platform contexts live in `Sources/Helix/Platform` and are selected via compile-time checks.
 
 ### Platform Context
 
@@ -526,7 +543,10 @@ swift test
 | Test File | Coverage |
 |-----------|----------|
 | `CommandParserTests.swift` | Tokenization, parsing, options, flags |
+| `HelpGeneratorTests.swift` | Usage/help formatting |
+| `HelpVersionBehaviorTests.swift` | `--help`, `--version`, empty-invocation help |
 | `PropertyWrappersTests.swift` | Wrapper initialization and registration |
+| `ParsableCommandBindingTests.swift` | End-to-end binding for options/flags/arguments/option groups |
 | `PlatformContextTests.swift` | Platform abstraction |
 | `PlatformPathTests.swift` | Path operations |
 | `StdioTests.swift` | I/O stream handling |
@@ -610,6 +630,8 @@ extension ParsableCommand {
 }
 ```
 
+Note: `Program.resolve` accepts `argv` with or without the root command name when you initialize `Program` with a single descriptor. If you provide multiple root descriptors, the first argument must select the command. `DefaultPlatformContext.shared.arguments` strips the executable name.
+
 ### CommandDescription
 
 ```swift
@@ -634,9 +656,12 @@ public enum HelixError: Error, Sendable {
     case unknownSubcommand(command: String, name: String)
     case parsingError(String)
     case missingEnvironmentVariable(String)
+    case webAssemblyExit(Int32)
     case optionNotBound(String)
     case argumentNotBound(String)
     case validationError(String)
+    case helpRequested
+    case versionRequested
 }
 ```
 
@@ -677,11 +702,11 @@ public struct ValidationError: Error, LocalizedError, Sendable {
 
 ### Key Differences
 
-1. **Command Name**: ArgumentParser infers from struct name; Helix does too but requires `commandName` in `CommandDescription`.
+1. **Command Name**: Helix defaults to the type name (with a trailing `Command` removed). Use `commandName` in `CommandDescription` when you need lowercase CLI names or when relying on `defaultSubcommand`.
 
 2. **Subcommand Registration**: ArgumentParser uses nested types; Helix uses `subcommands` array in `CommandDescription`.
 
-3. **Main Entry**: ArgumentParser uses `@main` attribute; Helix uses `try await MyCommand.main()`.
+3. **Main Entry**: ArgumentParser uses `@main` attribute; Helix uses `try await MyCommand.main(arguments:)`. If you initialize `Program` with multiple root descriptors, the first argument must select the command. If you initialize `Program` with a single descriptor, `Program.resolve` can also accept `argv` without the root command name.
 
 ### Example Migration
 
@@ -864,15 +889,14 @@ struct SecureCommand: ParsableCommand {
 
 ### Q: Can I use Helix in a synchronous context?
 
-Yes, commands can be synchronous if you don't need async:
+`run()` must be `async throws` to conform to `ParsableCommand`, but you can keep the body synchronous:
 
 ```swift
 struct SyncCommand: ParsableCommand {
     @Option(help: "Name")
     var name: String
 
-    // run() can be non-throwing and non-async
-    mutating func run() {
+    mutating func run() async throws {
         print("Hello, \(name)!")
     }
 }
@@ -880,29 +904,19 @@ struct SyncCommand: ParsableCommand {
 
 ### Q: How do I handle `--help` and `--version`?
 
-Help and version support are planned features. Currently, implement manually:
+Helix supports built-in help and version handling:
+
+- `-h` / `--help` prints help and exits before running command logic.
+- `-V` / `--version` prints `CommandDescription.version` (if set) and exits before running command logic.
+- `CommandDescription.showHelpOnEmptyInvocation = true` prints help when invoked with no arguments.
 
 ```swift
 struct MyCommand: ParsableCommand {
-    @Flag(name: .shortAndLong, help: "Show help")
-    var help: Bool = false
-
-    @Flag(name: .longName("version"), help: "Show version")
-    var version: Bool = false
-
-    mutating func run() async throws {
-        if version {
-            print("MyTool version 1.0.0")
-            return
-        }
-
-        if help {
-            print(HelixError.helpText(for: Self.descriptor))
-            return
-        }
-
-        // Normal execution
+    static var commandDescription: CommandDescription {
+        CommandDescription(version: "1.0.0", showHelpOnEmptyInvocation: true)
     }
+
+    mutating func run() async throws { /* ... */ }
 }
 ```
 
@@ -913,8 +927,7 @@ Yes! Helix can be used alongside any Swift framework:
 ```swift
 // In a Vapor route
 app.post("run") { req async in
-    let command = MyCommand()
-    try await command.main(arguments: req.body.string.split(separator: " ").map(String.init))
+    try await MyCommand.main(arguments: req.body.string.split(separator: " ").map(String.init))
     return "Done"
 }
 ```
@@ -927,11 +940,11 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ### Areas for Contribution
 
-1. Complete `bindValues()` implementation for full property binding
-2. Shell completion script generation
-3. Help text with ANSI colors
-4. Additional type conformances (URL, UUID, Decimal)
-5. More example commands
+1. Shell completion script generation
+2. Help text with ANSI colors and richer formatting
+3. Additional type conformances (URL, UUID, Decimal)
+4. Cross-platform test coverage (Windows, WASI)
+5. More example commands and cookbook patterns
 
 ---
 

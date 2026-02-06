@@ -2,7 +2,12 @@ import Helix
 
 /// A simple "Hello, World!" command demonstrating basic usage.
 struct HelloCommand: ParsableCommand {
-    static var commandName: String = "hello"
+    static var commandDescription: CommandDescription {
+        CommandDescription(
+            commandName: "hello",
+            abstract: "Print a greeting"
+        )
+    }
 
     @Option(name: .shortAndLong, help: "Name to greet")
     var name: String = "World"

@@ -9,8 +9,12 @@ public struct WebPlatformContext: PlatformContext {
     public init() {}
 
     public var arguments: [String] {
-        // WASM doesn't have command-line arguments in the traditional sense
-        // Arguments can be provided via JavaScript interop or query params
+        // WASI provides arguments via the runtime (CommandLine.arguments).
+        let args = CommandLine.arguments
+        if args.count > 1 {
+            return Array(args.dropFirst())
+        }
+        // Arguments can also be provided via JavaScript interop or query params.
         #if canImport(JavaScriptKit)
         return WASMArguments.getArguments()
         #else
@@ -19,8 +23,7 @@ public struct WebPlatformContext: PlatformContext {
     }
 
     public func environmentVariable(_ name: String) -> String? {
-        // WASM doesn't have environment variables
-        return nil
+        return ProcessInfo.processInfo.environment[name]
     }
 
     public var stdin: StdioStream {
@@ -36,8 +39,8 @@ public struct WebPlatformContext: PlatformContext {
     }
 
     public func exit(code: Int32) -> Never {
-        // WASM can't actually exit - we throw instead
-        throw HelixError.webAssemblyExit(code)
+        // WASM can't actually exit; trap instead.
+        fatalError("WebAssembly exit(\(code))")
     }
 
     public var currentWorkingDirectory: PlatformPath {
@@ -115,7 +118,14 @@ struct WebStdioStream: StdioStream {
     }
 
     func flush() throws {
-        FileHandle.standardOutput.synchronizeFile()
+        switch type {
+        case .stdout:
+            FileHandle.standardOutput.synchronizeFile()
+        case .stderr:
+            FileHandle.standardError.synchronizeFile()
+        case .stdin:
+            break
+        }
     }
 }
 

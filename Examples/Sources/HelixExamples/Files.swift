@@ -3,10 +3,9 @@ import Foundation
 
 /// Command demonstrating file operations with options and arguments.
 struct FilesCommand: ParsableCommand {
-    static var commandName: String = "files"
-
     static var commandDescription: CommandDescription {
         CommandDescription(
+            commandName: "files",
             abstract: "A file management utility",
             discussion: """
             This command demonstrates various Helix features including:

@@ -25,7 +25,7 @@ extension ParsableCommand {
 
     /// Creates a command descriptor from this command type.
     public static var descriptor: CommandDescriptor {
-        let signature = CommandSignature.describe(Self())
+        let signature = CommandSignature.describe(Self()).flattened()
         let typeName = String(describing: Self.self)
         let name: String
         if let cmdName = commandDescription.commandName {
@@ -40,11 +40,7 @@ extension ParsableCommand {
             discussion: commandDescription.discussion,
             signature: signature,
             subcommands: commandDescription.subcommands.map { $0.descriptor },
-            defaultSubcommandName: commandDescription.defaultSubcommand.map {
-                let defaultTypeName = String(describing: $0)
-                let defaultName = defaultTypeName.hasSuffix("Command") ? String(defaultTypeName.dropLast(7)) : defaultTypeName
-                return defaultName.lowercased()
-            }
+            defaultSubcommandName: commandDescription.defaultSubcommand.map { $0.descriptor.name }
         )
     }
 
@@ -60,19 +56,35 @@ extension ParsableCommand {
 
         // Create program and resolve
         let program = Program(descriptors: [descriptor])
+        let normalizedArguments = program.normalizedArguments(argv)
+        let (helpRequested, versionRequested) = parseHelpVersionFlags(from: normalizedArguments)
+
+        if normalizedArguments.isEmpty, commandDescription.showHelpOnEmptyInvocation {
+            print(HelixError.helpText(for: descriptor))
+            return
+        }
+
+        if helpRequested {
+            let helpDescriptor = (try? program.resolveDescriptorForHelp(arguments: normalizedArguments)) ?? descriptor
+            print(HelixError.helpText(for: helpDescriptor))
+            return
+        }
+
+        if versionRequested {
+            if let version = commandDescription.version {
+                print(version)
+            }
+            return
+        }
 
         do {
-            let invocation = try program.resolve(argv: argv)
-            var parsedCommand = Self()
+            let invocation = try program.resolve(argv: normalizedArguments)
+            let commandType = resolveCommandType(path: invocation.path)
+            var command = commandType.init()
 
-            // Bind parsed values to command properties
-            try bindValues(from: invocation, to: &parsedCommand)
-
-            // Run validation
-            try parsedCommand.validate()
-
-            // Run the command
-            try await parsedCommand.run()
+            try bindValues(from: invocation, to: &command)
+            try command.validate()
+            try await command.run()
         } catch let error as HelixError {
             switch error {
             default:
@@ -81,44 +93,42 @@ extension ParsableCommand {
         }
     }
 
+    private static func parseHelpVersionFlags(from arguments: [String]) -> (help: Bool, version: Bool) {
+        var helpRequested = false
+        var versionRequested = false
+        for argument in arguments {
+            if argument == "--" { break }
+            switch argument {
+            case "-h", "--help":
+                helpRequested = true
+            case "-V", "--version":
+                versionRequested = true
+            default:
+                break
+            }
+        }
+        return (helpRequested, versionRequested)
+    }
+
     /// Binds parsed values from invocation to command properties using reflection.
     /// This method uses Mirror to traverse command properties and set values from parsed arguments.
-    private static func bindValues(from invocation: CommandInvocation, to command: inout Self) throws {
-        // Reflection-based property binding is complex
-        // For now, this is a placeholder that demonstrates the architecture
-        // A full implementation would use Mirror to set property values
-        // based on the parsed invocation data
+    private static func bindValues(from invocation: CommandInvocation, to command: inout any ParsableCommand) throws {
+        try _HelixBinder.bindCommand(
+            &command,
+            parsed: invocation.parsedValues,
+            environment: DefaultPlatformContext.shared.environment
+        )
     }
 
-    /// Binds values for an option group (placeholder for full implementation).
-    private static func bindGroupValues(
-        from invocation: CommandInvocation,
-        groupMirror: Mirror,
-        to group: Any
-    ) throws {
-        // Full implementation would recursively bind group properties
-    }
-
-    /// Binds top-level property values (placeholder for full implementation).
-    private static func bindTopLevelValues(from invocation: CommandInvocation, to command: inout Self) throws {
-        // Full implementation would use Mirror to set property values
-    }
-
-    private static func countBoundPositional(in mirror: Mirror, upToLabel targetLabel: String) -> Int {
-        // Placeholder implementation
-        return 0
-    }
-
-    private static func bindOption(label: String, value: String?, to command: inout Self, in mirror: Mirror) throws {
-        // Placeholder: Full implementation would parse string value to correct type
-    }
-
-    private static func bindArgument(label: String, value: String?, to command: inout Self, in mirror: Mirror) throws {
-        // Placeholder: Full implementation would parse string value to correct type
-    }
-
-    private static func setProperty<T>(on instance: inout Any, in mirror: Mirror, label: String, value: T) {
-        // Placeholder: Full implementation would use Mirror's children mutation
+    private static func resolveCommandType(path: [String]) -> any ParsableCommand.Type {
+        var current: any ParsableCommand.Type = Self.self
+        for component in path.dropFirst() {
+            guard let match = current.commandDescription.subcommands.first(where: { $0.descriptor.name == component }) else {
+                break
+            }
+            current = match
+        }
+        return current
     }
 }
 

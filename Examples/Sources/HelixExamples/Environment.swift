@@ -1,10 +1,15 @@
 import Helix
 
-/// Command demonstrating environment variable support.
+/// Command demonstrating environment variable fallback for options.
 struct ConfigCommand: ParsableCommand {
-    static var commandName: String = "config"
+    static var commandDescription: CommandDescription {
+        CommandDescription(
+            commandName: "config",
+            abstract: "Load configuration from CLI and environment"
+        )
+    }
 
-    @Option(name: .shortAndLong, help: "API key (can use API_KEY env var)")
+    @Option(name: .shortAndLong, envVar: "API_KEY", help: "API key (can use API_KEY env var)")
     var apiKey: String?
 
     @Option(name: .shortAndLong, envVar: "DATABASE_URL", help: "Database connection URL")
@@ -17,9 +22,6 @@ struct ConfigCommand: ParsableCommand {
     var showValues: Bool = false
 
     mutating func run() async throws {
-        // Note: Environment variable fallback is handled during parsing
-        // The actual values are available after parsing completes
-
         if showValues {
             print("Configuration:")
             print("  API Key: \(apiKey.map { "***\($0.suffix(4))" } ?? "not set")")

@@ -46,12 +46,32 @@ final class CommandParserTests: XCTestCase {
         XCTAssertEqual(values.options["output"], ["result.txt"])
     }
 
+    func testParseLongOptionWithEquals() throws {
+        var signature = CommandSignature()
+        Option<String>(name: .longName("output"), help: "Output file").register(label: "output", signature: &signature)
+
+        let parser = CommandParser(signature: signature)
+        let values = try parser.parse(arguments: ["--output=result.txt"])
+
+        XCTAssertEqual(values.options["output"], ["result.txt"])
+    }
+
     func testParseShortOption() throws {
         var signature = CommandSignature()
         Option<String>(name: .short(Character("o")), help: "Output file").register(label: "output", signature: &signature)
 
         let parser = CommandParser(signature: signature)
         let values = try parser.parse(arguments: ["-o", "result.txt"])
+
+        XCTAssertEqual(values.options["output"], ["result.txt"])
+    }
+
+    func testParseShortOptionWithEquals() throws {
+        var signature = CommandSignature()
+        Option<String>(name: .short(Character("o")), help: "Output file").register(label: "output", signature: &signature)
+
+        let parser = CommandParser(signature: signature)
+        let values = try parser.parse(arguments: ["-o=result.txt"])
 
         XCTAssertEqual(values.options["output"], ["result.txt"])
     }

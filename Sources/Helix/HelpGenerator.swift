@@ -76,16 +76,15 @@ public struct HelpGenerator {
 
         // Add flags
         for flag in flattened.flags {
-            if let short = flag.names.first(where: { $0.shortComponent != nil }) {
-                parts.append("[\(short.shortComponent!)]")
-            } else if let long = flag.names.first(where: { $0.longComponent != nil }) {
-                parts.append("[\(long.longComponent!)]")
+            if let flagName = preferredFlagUsageName(flag.names) {
+                parts.append("[\(flagName)]")
             }
         }
 
         // Add options (simplified - just shows placeholders)
         for option in flattened.options {
-            parts.append("[\(option.label)>]")
+            let optionName = preferredOptionUsageName(option.names) ?? "--\(option.label)"
+            parts.append("[\(optionName) <\(option.label)>]")
         }
 
         // Add required arguments
@@ -114,10 +113,7 @@ public struct HelpGenerator {
         }
 
         let joined = parts.joined(separator: ", ")
-        if let help = option.help {
-            return String(format: "%-40s %@", joined, help)
-        }
-        return joined
+        return formatHelpLine(joined, help: option.help)
     }
 
     private func formatFlag(_ flag: FlagDefinition) -> String {
@@ -133,18 +129,39 @@ public struct HelpGenerator {
         }
 
         let joined = parts.joined(separator: ", ")
-        if let help = flag.help {
-            return String(format: "%-40s %@", joined, help)
-        }
-        return joined
+        return formatHelpLine(joined, help: flag.help)
     }
 
     private func formatArgument(_ arg: ArgumentDefinition) -> String {
         let label = arg.isOptional ? "[\(arg.label)]" : "<\(arg.label)>"
-        if let help = arg.help {
-            return String(format: "%-40s %@", label, help)
+        return formatHelpLine(label, help: arg.help)
+    }
+
+    private func formatHelpLine(_ label: String, help: String?) -> String {
+        guard let help else { return label }
+        let width = 40
+        let paddingCount = max(1, width - label.count)
+        return label + String(repeating: " ", count: paddingCount) + help
+    }
+
+    private func preferredFlagUsageName(_ names: [CommanderName]) -> String? {
+        if let short = names.first(where: { $0.shortComponent != nil })?.shortComponent {
+            return "-\(short)"
         }
-        return label
+        if let long = names.first(where: { $0.longComponent != nil })?.longComponent {
+            return "--\(long)"
+        }
+        return nil
+    }
+
+    private func preferredOptionUsageName(_ names: [CommanderName]) -> String? {
+        if let long = names.first(where: { $0.longComponent != nil })?.longComponent {
+            return "--\(long)"
+        }
+        if let short = names.first(where: { $0.shortComponent != nil })?.shortComponent {
+            return "-\(short)"
+        }
+        return nil
     }
 }
 

@@ -3,19 +3,31 @@ import Foundation
 /// Declares a named option (short/long) that can parse arbitrary value types.
 @propertyWrapper
 public struct Option<Value: ExpressibleFromArgument>: CommanderMetadata {
-    private var storage: Value?
+    final class _Box: @unchecked Sendable {
+        var value: Value?
+        var environmentValue: Value?
+        var parsedFromArgs: Bool
+        let hasDefault: Bool
+
+        init(value: Value?, environmentValue: Value?, parsedFromArgs: Bool, hasDefault: Bool) {
+            self.value = value
+            self.environmentValue = environmentValue
+            self.parsedFromArgs = parsedFromArgs
+            self.hasDefault = hasDefault
+        }
+    }
+
+    private var box: _Box
     private let nameSpecifications: [NameSpecification]
     private let help: String?
     private let envVar: String?
-    private var environmentValue: Value?
-    private var isParsed: Bool = false
 
     /// Returns the stored value, environment value, or nil if optional.
     /// Crashes with a helpful message if accessed before being bound and not optional.
     public var wrappedValue: Value {
         get {
-            if let storage { return storage }
-            if let envValue = environmentValue { return envValue }
+            if let value = box.value { return value }
+            if let envValue = box.environmentValue { return envValue }
             // For optional types, return nil
             if Value.self is OptionalProtocol.Type {
                 return (nil as Value?)!
@@ -24,44 +36,41 @@ public struct Option<Value: ExpressibleFromArgument>: CommanderMetadata {
             fatalError("Helix option '\(Value.self)' accessed before being parsed. This is a development error.")
         }
         set {
-            self.storage = newValue
-            self.isParsed = true
+            self.box.value = newValue
+            self.box.parsedFromArgs = true
         }
     }
 
     public init(wrappedValue: Value, name: NameSpecification = .automatic, help: String? = nil, envVar: String? = nil) {
-        self.storage = wrappedValue
+        self.box = _Box(value: wrappedValue, environmentValue: nil, parsedFromArgs: false, hasDefault: true)
         self.nameSpecifications = [name]
         self.help = help
         self.envVar = envVar
-        self.isParsed = true
     }
 
     public init(name: NameSpecification = .automatic, help: String? = nil, envVar: String? = nil) {
-        self.storage = nil
+        self.box = _Box(value: nil, environmentValue: nil, parsedFromArgs: false, hasDefault: false)
         self.nameSpecifications = [name]
         self.help = help
         self.envVar = envVar
-        self.isParsed = false
     }
 
     public init(names: [NameSpecification], help: String? = nil, envVar: String? = nil) {
-        self.storage = nil
+        self.box = _Box(value: nil, environmentValue: nil, parsedFromArgs: false, hasDefault: false)
         self.nameSpecifications = names
         self.help = help
         self.envVar = envVar
-        self.isParsed = false
     }
 
     /// Sets the environment variable value to use as fallback.
     /// This is called by the parser after binding.
     mutating func setEnvironmentValue(_ value: Value?) {
-        self.environmentValue = value
+        self.box.environmentValue = value
     }
 
     /// Returns true if this option was parsed from arguments.
     public var wasParsed: Bool {
-        isParsed || environmentValue != nil
+        box.parsedFromArgs || box.environmentValue != nil
     }
 
     public func register(label: String, signature: inout CommandSignature) {
@@ -81,15 +90,26 @@ extension Option: Sendable where Value: Sendable {}
 /// Declares a positional argument, optionally optional.
 @propertyWrapper
 public struct Argument<Value: ExpressibleFromArgument>: CommanderMetadata {
-    private var storage: Value?
+    final class _Box: @unchecked Sendable {
+        var value: Value?
+        var parsedFromArgs: Bool
+        let hasDefault: Bool
+
+        init(value: Value?, parsedFromArgs: Bool, hasDefault: Bool) {
+            self.value = value
+            self.parsedFromArgs = parsedFromArgs
+            self.hasDefault = hasDefault
+        }
+    }
+
+    private var box: _Box
     private let help: String?
-    private var isParsed: Bool = false
 
     /// Returns the stored value or nil if optional.
     /// Crashes with a helpful message if accessed before being bound.
     public var wrappedValue: Value {
         get {
-            if let storage { return storage }
+            if let value = box.value { return value }
             // For optional types, return nil
             if Value.self is OptionalProtocol.Type {
                 return (nil as Value?)!
@@ -98,26 +118,24 @@ public struct Argument<Value: ExpressibleFromArgument>: CommanderMetadata {
             fatalError("Helix argument '\(Value.self)' accessed before being parsed. This is a development error.")
         }
         set {
-            self.storage = newValue
-            self.isParsed = true
+            self.box.value = newValue
+            self.box.parsedFromArgs = true
         }
     }
 
     public init(wrappedValue: Value, help: String? = nil) {
-        self.storage = wrappedValue
+        self.box = _Box(value: wrappedValue, parsedFromArgs: false, hasDefault: true)
         self.help = help
-        self.isParsed = true
     }
 
     public init(help: String? = nil) {
-        self.storage = nil
+        self.box = _Box(value: nil, parsedFromArgs: false, hasDefault: false)
         self.help = help
-        self.isParsed = false
     }
 
     /// Returns true if this argument was parsed from arguments.
     public var wasParsed: Bool {
-        isParsed
+        box.parsedFromArgs
     }
 
     public func register(label: String, signature: inout CommandSignature) {
@@ -139,20 +157,30 @@ extension Argument: Sendable where Value: Sendable {}
 /// Declares a boolean flag that defaults to `false` and toggles to `true` when present.
 @propertyWrapper
 public struct Flag: CommanderMetadata, Sendable {
-    public var wrappedValue: Bool
+    final class _Box: @unchecked Sendable {
+        var value: Bool
+        init(_ value: Bool) { self.value = value }
+    }
+
+    private var box: _Box
     private let nameSpecifications: [NameSpecification]
     private let help: String?
 
     public init(wrappedValue: Bool = false, name: NameSpecification = .automatic, help: String? = nil) {
-        self.wrappedValue = wrappedValue
+        self.box = _Box(wrappedValue)
         self.nameSpecifications = [name]
         self.help = help
     }
 
     public init(wrappedValue: Bool = false, names: [NameSpecification], help: String? = nil) {
-        self.wrappedValue = wrappedValue
+        self.box = _Box(wrappedValue)
         self.nameSpecifications = names
         self.help = help
+    }
+
+    public var wrappedValue: Bool {
+        get { box.value }
+        set { box.value = newValue }
     }
 
     public func register(label: String, signature: inout CommandSignature) {
@@ -172,14 +200,24 @@ public struct Flag: CommanderMetadata, Sendable {
 /// Provides nested Helix metadata so you can keep related parameters together.
 @propertyWrapper
 public struct OptionGroup<Value: HelixParsable>: CommanderOptionGroup {
-    public var wrappedValue: Value
+    final class _Box: @unchecked Sendable {
+        var value: Value
+        init(_ value: Value) { self.value = value }
+    }
+
+    private var box: _Box
+
+    public var wrappedValue: Value {
+        get { box.value }
+        set { box.value = newValue }
+    }
 
     public init(wrappedValue: Value) {
-        self.wrappedValue = wrappedValue
+        self.box = _Box(wrappedValue)
     }
 
     public init() where Value: HelixParsable {
-        self.wrappedValue = Value()
+        self.box = _Box(Value())
     }
 
     public func register(label: String, signature: inout CommandSignature) {
@@ -212,3 +250,118 @@ protocol DefaultInitializable {
 
 protocol OptionalProtocol {}
 extension Optional: OptionalProtocol {}
+
+// MARK: - Binding conformance
+
+protocol _HelixOptionMultiValueParser {
+    static func _helixParseOption(values: [String]) -> Any?
+}
+
+protocol _HelixPositionalArrayParser {
+    static func _helixParsePositional(values: [String]) -> Any?
+}
+
+extension Array: _HelixOptionMultiValueParser where Element: ExpressibleFromArgument {
+    static func _helixParseOption(values: [String]) -> Any? {
+        var result: [Element] = []
+        for value in values {
+            let parts = value.split(separator: ",").map(String.init)
+            for part in parts {
+                guard let parsed = Element(argument: part) else { return nil }
+                result.append(parsed)
+            }
+        }
+        return result
+    }
+}
+
+extension Array: _HelixPositionalArrayParser where Element: ExpressibleFromArgument {
+    static func _helixParsePositional(values: [String]) -> Any? {
+        var result: [Element] = []
+        for value in values {
+            guard let parsed = Element(argument: value) else { return nil }
+            result.append(parsed)
+        }
+        return result
+    }
+}
+
+extension Option: _HelixOptionBinding {
+    mutating func _helixBindOption(label: String, values: [String]?, environment: [String: String]) throws {
+        if let values, !values.isEmpty {
+            if let parser = Value.self as? _HelixOptionMultiValueParser.Type {
+                guard let parsed = parser._helixParseOption(values: values) as? Value else {
+                    throw HelixError.parsingError("Invalid value for option \(label)")
+                }
+                box.value = parsed
+            } else {
+                guard let last = values.last, let parsed = Value(argument: last) else {
+                    throw HelixError.parsingError("Invalid value for option \(label)")
+                }
+                box.value = parsed
+            }
+            box.parsedFromArgs = true
+            return
+        }
+
+        if let envVar, let envValue = environment[envVar] {
+            guard let parsed = Value(argument: envValue) else {
+                throw HelixError.parsingError("Invalid value for environment variable \(envVar)")
+            }
+            box.environmentValue = parsed
+        }
+
+        let isOptional = Value.self is OptionalProtocol.Type
+        if !isOptional, !box.hasDefault, box.value == nil, box.environmentValue == nil {
+            throw HelixError.parsingError("Missing value for option \(label)")
+        }
+    }
+}
+
+extension Argument: _HelixArgumentBinding {
+    mutating func _helixBindArgument(label: String, positional: [String], index: inout Int, isLast: Bool) throws {
+        if let parser = Value.self as? _HelixPositionalArrayParser.Type {
+            guard isLast else {
+                throw HelixError.parsingError("Variadic argument \(label) must be last")
+            }
+            let remaining = index < positional.count ? Array(positional[index...]) : []
+            guard let parsed = parser._helixParsePositional(values: remaining) as? Value else {
+                throw HelixError.parsingError("Invalid value for argument \(label)")
+            }
+            box.value = parsed
+            box.parsedFromArgs = true
+            index = positional.count
+            return
+        }
+
+        if index >= positional.count {
+            let isOptional = Value.self is OptionalProtocol.Type
+            if isOptional || box.hasDefault {
+                return
+            }
+            throw HelixError.parsingError("Missing argument \(label)")
+        }
+
+        let raw = positional[index]
+        index += 1
+        guard let parsed = Value(argument: raw) else {
+            throw HelixError.parsingError("Invalid value for argument \(label)")
+        }
+        box.value = parsed
+        box.parsedFromArgs = true
+    }
+}
+
+extension Flag: _HelixFlagBinding {
+    mutating func _helixBindFlag(label: String, flags: Set<String>) {
+        if flags.contains(label) {
+            box.value = true
+        }
+    }
+}
+
+extension OptionGroup: _HelixOptionGroupBinding {
+    mutating func _helixBindGroup(parsed: ParsedValues, environment: [String: String]) throws {
+        try _HelixBinder.bindGroupValue(wrappedValue, parsed: parsed, environment: environment)
+    }
+}

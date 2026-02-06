@@ -51,6 +51,12 @@ public struct CommandParser {
                 } else {
                     throw HelixError.parsingError("Unknown option --\(name)")
                 }
+            case let .optionWithValue(name, value):
+                if let definition = optionLookup[name] {
+                    options[definition.label, default: []].append(value)
+                } else {
+                    throw HelixError.parsingError("Unknown option --\(name)")
+                }
             case let .flag(name):
                 guard let flagLabel = flagLookup[name] else {
                     throw HelixError.parsingError("Unknown option -\(name)")
@@ -98,10 +104,12 @@ public struct CommandParser {
         }
         return lookup
     }
+
 }
 
 enum Token: Equatable, Sendable {
     case option(name: String)
+    case optionWithValue(name: String, value: String)
     case flag(name: String)
     case argument(String)
     case terminator
@@ -118,11 +126,26 @@ enum CommandLineTokenizer {
                 break
             } else if segment.hasPrefix("--") {
                 let name = String(segment.dropFirst(2))
-                result.append(.option(name: name))
+                if let equalsIndex = name.firstIndex(of: "=") {
+                    let option = String(name[..<equalsIndex])
+                    let value = String(name[name.index(after: equalsIndex)...])
+                    result.append(.optionWithValue(name: option, value: value))
+                } else {
+                    result.append(.option(name: name))
+                }
             } else if segment.hasPrefix("-"), segment.count > 1 {
                 let body = segment.dropFirst()
                 if body.count == 1 {
                     result.append(.option(name: String(body)))
+                } else if let equalsIndex = body.firstIndex(of: "=") {
+                    let name = String(body[..<equalsIndex])
+                    let value = String(body[body.index(after: equalsIndex)...])
+                    if name.count == 1 {
+                        result.append(.optionWithValue(name: name, value: value))
+                    } else {
+                        // Not a supported form (only -o=value is supported).
+                        result.append(.argument(segment))
+                    }
                 } else {
                     for char in body {
                         result.append(.flag(name: String(char)))

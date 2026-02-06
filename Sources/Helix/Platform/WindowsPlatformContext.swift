@@ -25,30 +25,41 @@ public struct WindowsPlatformContext: PlatformContext {
     }
 
     public func environmentVariable(_ name: String) -> String? {
-        // Try wide string first (Windows API uses UTF-16)
-        let wideBuffer = UnsafeMutablePointer<UInt16>.allocate(capacity: 32767)
-        defer { wideBuffer.deallocate() }
+        // Windows API uses UTF-16 and reports lengths including the null terminator.
+        var wideName = Array(name.utf16)
+        wideName.append(0)
 
-        let wideName = name.utf16
-        for (index, codeUnit) in wideName.enumerated() {
-            wideBuffer[index] = codeUnit
+        return wideName.withUnsafeBufferPointer { namePtr in
+            let required = GetEnvironmentVariableW(namePtr.baseAddress, nil, 0)
+            if required == 0 {
+                let err = GetLastError()
+                if err == ERROR_ENVVAR_NOT_FOUND {
+                    return nil
+                }
+                // Variable exists but empty (or another non-not-found error).
+                return ""
+            }
+
+            var buffer = UnsafeMutablePointer<UInt16>.allocate(capacity: Int(required))
+            defer { buffer.deallocate() }
+
+            var copied = GetEnvironmentVariableW(namePtr.baseAddress, buffer, required)
+            if copied >= required {
+                buffer.deallocate()
+                buffer = UnsafeMutablePointer<UInt16>.allocate(capacity: Int(copied + 1))
+                copied = GetEnvironmentVariableW(namePtr.baseAddress, buffer, copied + 1)
+            }
+
+            if copied == 0 {
+                let err = GetLastError()
+                if err == ERROR_ENVVAR_NOT_FOUND {
+                    return nil
+                }
+                return ""
+            }
+
+            return String(decoding: UnsafeBufferPointer(start: buffer, count: Int(copied)), as: UTF16.self)
         }
-        wideBuffer[wideName.count] = 0
-
-        let length = GetEnvironmentVariableW(wideBuffer, nil, 0)
-        guard length > 0 else { return nil }
-
-        let valueBuffer = UnsafeMutablePointer<UInt16>.allocate(capacity: length)
-        defer { valueBuffer.deallocate() }
-
-        GetEnvironmentVariableW(wideBuffer, valueBuffer, length)
-
-        if let str = String(utf16CodeUnits: valueBuffer, count: length) {
-            return str
-        }
-
-        // Fallback to _environ (ANSI)
-        return nil
     }
 
     public var stdin: StdioStream {
@@ -68,13 +79,17 @@ public struct WindowsPlatformContext: PlatformContext {
     }
 
     public var currentWorkingDirectory: PlatformPath {
-        let buffer = UnsafeMutablePointer<UInt16>.allocate(capacity: 32767)
+        let required = GetCurrentDirectoryW(0, nil)
+        guard required > 0 else { return PlatformPath("") }
+
+        let capacity = Int(required + 1)
+        let buffer = UnsafeMutablePointer<UInt16>.allocate(capacity: capacity)
         defer { buffer.deallocate() }
 
-        let length = GetCurrentDirectoryW(32767, buffer)
-        guard length > 0 else { return PlatformPath("") }
+        let copied = GetCurrentDirectoryW(UInt32(capacity), buffer)
+        guard copied > 0 else { return PlatformPath("") }
 
-        let path = String(utf16CodeUnits: buffer, count: Int(length))
+        let path = String(decoding: UnsafeBufferPointer(start: buffer, count: Int(copied)), as: UTF16.self)
         return PlatformPath(path)
     }
 }
