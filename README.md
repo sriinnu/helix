@@ -1,14 +1,17 @@
 # Helix
 
 <p align="center">
-  <img src="logo.svg" alt="Helix Logo" width="200" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="logo-dark.svg" />
+    <img src="logo.svg" alt="Helix Logo" width="200" />
+  </picture>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Swift-6.0+-orange.svg" />
-  <img src="https://img.shields.io/badge/Platform-macOS%20%7C%20iOS%20%7C%20Linux%20%7C%20Windows%20%7C%20WASI-lightgrey.svg" />
+  <img src="https://img.shields.io/badge/Platforms-Apple%20%7C%20Linux%20%7C%20Windows%20%7C%20WASI-lightgrey.svg" />
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
-  <img src="https://img.shields.io/badge/Tests-passing-brightgreen.svg" />
+  <img src="https://github.com/sriinnu/Helix/actions/workflows/ci.yml/badge.svg" />
 </p>
 
 A modern, declarative command-line parsing framework for Swift that uses property wrappers to create elegant CLI interfaces. Inspired by Swift ArgumentParser but with a lighter footprint and simplified API.

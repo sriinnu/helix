@@ -1,0 +1,16 @@
+{
+  "skills": [
+    {
+      "name": "helix",
+      "description": "Specialized agent for Helix Swift CLI framework development",
+      "url": "agent.md",
+      "allowedTopics": [
+        "Helix CLI framework",
+        "Swift command-line parsing",
+        "Property wrapper patterns in Swift",
+        "Swift ArgumentParser alternatives",
+        "Declarative CLI APIs"
+      ]
+    }
+  ]
+}
