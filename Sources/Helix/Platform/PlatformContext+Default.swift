@@ -1,5 +1,11 @@
 import Foundation
 
+#if canImport(Glibc)
+import Glibc
+#elseif canImport(Musl)
+import Musl
+#endif
+
 extension PlatformContext {
     /// The current platform context based on the runtime platform.
     /// Uses compile-time platform detection to select the appropriate implementation.
@@ -23,6 +29,8 @@ public struct DefaultPlatformContext: PlatformContext {
     public init() {
         #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
         self.context = DarwinPlatformContext()
+        #elseif os(Linux)
+        self.context = LinuxPlatformContext()
         #elseif os(Windows)
         self.context = WindowsPlatformContext()
         #elseif os(WASI)
@@ -52,7 +60,7 @@ struct FallbackPlatformContext: PlatformContext {
     var stderr: StdioStream = FileHandleStdioStream(.stderr)
 
     func environmentVariable(_ name: String) -> String? {
-        #if canImport(Darwin)
+        #if canImport(Darwin) || canImport(Glibc) || canImport(Musl)
         let value = getenv(name)
         return value.flatMap { String(validatingCString: $0) }
         #else
@@ -63,8 +71,13 @@ struct FallbackPlatformContext: PlatformContext {
     func exit(code: Int32) -> Never {
         #if canImport(Darwin)
         Darwin.exit(code)
+        #elseif canImport(Glibc)
+        Glibc.exit(code)
+        #elseif canImport(Musl)
+        Musl.exit(code)
         #else
-        exit(code)
+        // Intentionally trap on platforms without a usable exit().
+        preconditionFailure("exit(code:) is not supported on this platform")
         #endif
     }
 

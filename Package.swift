@@ -1,6 +1,12 @@
 // swift-tools-version: 6.0
 import PackageDescription
 
+var packageDependencies: [Package.Dependency] = []
+#if !os(Windows)
+// Swift-DocC is a development-time plugin dependency. It may not be available on all hosts.
+packageDependencies.append(.package(url: "https://github.com/apple/swift-docc-plugin", from: "1.4.0"))
+#endif
+
 let package = Package(
     name: "Helix",
     platforms: [
@@ -13,9 +19,7 @@ let package = Package(
     products: [
         .library(name: "Helix", targets: ["Helix"]),
     ],
-    dependencies: [
-        .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.4.0"),
-    ],
+    dependencies: packageDependencies,
     targets: [
         .target(
             name: "Helix",

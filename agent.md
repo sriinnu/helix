@@ -6,7 +6,7 @@ This document provides specialized guidance for developing and maintaining the *
 
 Helix is a lightweight, declarative CLI framework inspired by Swift ArgumentParser. It uses Swift's property wrappers and reflection to create elegant command-line interfaces with zero external dependencies.
 
-- **Platforms**: macOS 14+, iOS 17+, tvOS 17+, watchOS 10+, visionOS 1+, plus Windows and WASI support via platform contexts in `Sources/Helix/Platform`
+- **Platforms**: macOS 14+, iOS 17+, tvOS 17+, watchOS 10+, visionOS 1+, plus Linux, Windows, and WASI support via platform contexts in `Sources/Helix/Platform`
 - **Language**: Swift 6 (strict concurrency)
 - **Structure**: Single-target library in `Sources/Helix/`
 

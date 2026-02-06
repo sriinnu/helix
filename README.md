@@ -6,7 +6,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Swift-6.0+-orange.svg" />
-  <img src="https://img.shields.io/badge/Platform-macOS%20%7C%20iOS%20%7C%20tvOS%20%7C%20watchOS%20%7C%20visionOS-lightgrey.svg" />
+  <img src="https://img.shields.io/badge/Platform-macOS%20%7C%20iOS%20%7C%20Linux%20%7C%20Windows%20%7C%20WASI-lightgrey.svg" />
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" />
   <img src="https://img.shields.io/badge/Tests-passing-brightgreen.svg" />
 </p>
@@ -456,7 +456,8 @@ Helix runs on multiple platforms with a unified API:
 | tvOS | 17.0+ | ✅ Full Support |
 | watchOS | 10.0+ | ✅ Full Support |
 | visionOS | 1.0+ | ✅ Full Support |
-| Windows | - | ⚠️ Supported (not covered by CI here) |
+| Linux | - | ✅ Supported (CI) |
+| Windows | - | ✅ Supported (CI) |
 | WASI | - | ⚠️ Supported (not covered by CI here) |
 
 Platform contexts live in `Sources/Helix/Platform` and are selected via compile-time checks.
