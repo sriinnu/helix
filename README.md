@@ -937,7 +937,7 @@ app.post("run") { req async in
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome. See `CONTRIBUTING.md`.
 
 ### Areas for Contribution
 
@@ -946,6 +946,14 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 3. Additional type conformances (URL, UUID, Decimal)
 4. Cross-platform test coverage (Windows, WASI)
 5. More example commands and cookbook patterns
+
+## Security
+
+See `SECURITY.md`.
+
+## Changelog
+
+See `CHANGELOG.md`.
 
 ---
 
