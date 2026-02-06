@@ -1,5 +1,9 @@
 import Foundation
 
+#if os(Windows)
+import WinSDK
+#endif
+
 #if canImport(Darwin)
 import Darwin
 #elseif canImport(Glibc)
@@ -61,17 +65,17 @@ extension PlatformContext {
     public var environment: [String: String] {
         var result: [String: String] = [:]
         #if os(Windows)
-        let envBlock = GetEnvironmentStringsW()
+        guard let envBlock = GetEnvironmentStringsW() else { return result }
         defer { FreeEnvironmentStringsW(envBlock) }
-        var current: UnsafeMutablePointer<UInt16>? = envBlock
-        while let entry = current, entry.pointee != 0 {
-            if let str = String(utf16CodeUnits: entry, count: Int(wcslen(entry))) {
-                let parts = str.split(separator: "=", maxSplits: 1)
-                if parts.count == 2 {
-                    result[parts[0]] = String(parts[1])
-                }
+        var current = envBlock
+        while current.pointee != 0 {
+            let length = Int(wcslen(current))
+            let entry = String(decoding: UnsafeBufferPointer(start: current, count: length), as: UTF16.self)
+            let parts = entry.split(separator: "=", maxSplits: 1)
+            if parts.count == 2 {
+                result[String(parts[0])] = String(parts[1])
             }
-            current = entry.advanced(by: wcslen(entry) + 1)
+            current = current.advanced(by: length + 1)
         }
         #else
         var current = environ
