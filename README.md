@@ -467,8 +467,8 @@ Helix runs on multiple platforms with a unified API:
 | tvOS | 17.0+ | ✅ Full Support |
 | watchOS | 10.0+ | ✅ Full Support |
 | visionOS | 1.0+ | ✅ Full Support |
-| Linux | - | ⚠️ Source-supported via `LinuxPlatformContext` (validate in CI/use-case) |
-| Windows | - | ⚠️ Source-supported via `WindowsPlatformContext` |
+| Linux | - | ✅ Source-supported via `LinuxPlatformContext` |
+| Windows | - | ✅ Source-supported via `WindowsPlatformContext` |
 | WASI | - | ⚠️ Source-supported via `WebPlatformContext` (limited features) |
 
 Platform contexts live in `Sources/Helix/Platform` and are selected via compile-time checks.
@@ -563,6 +563,8 @@ swift test
 | `PlatformContextTests.swift` | Platform abstraction |
 | `PlatformPathTests.swift` | Path operations |
 | `StdioTests.swift` | I/O stream handling |
+
+CI also validates example targets by running `swift build --package-path Examples` across macOS/Linux/Windows.
 
 ### Mock Platform Context
 

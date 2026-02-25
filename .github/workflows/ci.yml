@@ -23,3 +23,6 @@ jobs:
 
       - name: Run Tests
         run: swift test
+
+      - name: Build Examples
+        run: swift build --package-path Examples
