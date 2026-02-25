@@ -34,9 +34,10 @@ public struct PlatformPath: Sendable, ExpressibleFromArgument {
             return true
         }
         // Check for drive letter (e.g., C:)
-        if path.count >= 2 {
+        if path.count >= 3 {
             let secondChar = path[path.index(after: path.startIndex)]
-            return secondChar == ":"
+            let thirdChar = path[path.index(path.startIndex, offsetBy: 2)]
+            return secondChar == ":" && (thirdChar == "\\" || thirdChar == "/")
         }
         return false
         #else

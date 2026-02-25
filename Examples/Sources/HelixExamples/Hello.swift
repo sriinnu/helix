@@ -12,10 +12,10 @@ struct HelloCommand: ParsableCommand {
     @Option(name: .shortAndLong, help: "Name to greet")
     var name: String = "World"
 
-    @Flag(name: .short('u'), help: "Use uppercase")
+    @Flag(name: .short("u"), help: "Use uppercase")
     var uppercase: Bool = false
 
-    @Flag(name: .short('f'), help: "Formal greeting")
+    @Flag(name: .short("f"), help: "Formal greeting")
     var formal: Bool = false
 
     mutating func run() async throws {

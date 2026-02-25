@@ -43,13 +43,7 @@ public struct WindowsPlatformContext: PlatformContext {
             var buffer = UnsafeMutablePointer<UInt16>.allocate(capacity: Int(required))
             defer { buffer.deallocate() }
 
-            var copied = GetEnvironmentVariableW(namePtr.baseAddress, buffer, required)
-            if copied >= required {
-                buffer.deallocate()
-                buffer = UnsafeMutablePointer<UInt16>.allocate(capacity: Int(copied + 1))
-                copied = GetEnvironmentVariableW(namePtr.baseAddress, buffer, copied + 1)
-            }
-
+            let copied = GetEnvironmentVariableW(namePtr.baseAddress, buffer, required)
             if copied == 0 {
                 let err = GetLastError()
                 if err == ERROR_ENVVAR_NOT_FOUND {
@@ -58,7 +52,10 @@ public struct WindowsPlatformContext: PlatformContext {
                 return ""
             }
 
-            return String(decoding: UnsafeBufferPointer(start: buffer, count: Int(copied)), as: UTF16.self)
+            return String(
+                decoding: UnsafeBufferPointer(start: buffer, count: Int(copied)),
+                as: UTF16.self
+            )
         }
     }
 
@@ -82,11 +79,10 @@ public struct WindowsPlatformContext: PlatformContext {
         let required = GetCurrentDirectoryW(0, nil)
         guard required > 0 else { return PlatformPath("") }
 
-        let capacity = Int(required + 1)
-        let buffer = UnsafeMutablePointer<UInt16>.allocate(capacity: capacity)
+        let buffer = UnsafeMutablePointer<UInt16>.allocate(capacity: Int(required))
         defer { buffer.deallocate() }
 
-        let copied = GetCurrentDirectoryW(UInt32(capacity), buffer)
+        let copied = GetCurrentDirectoryW(required, buffer)
         guard copied > 0 else { return PlatformPath("") }
 
         let path = String(decoding: UnsafeBufferPointer(start: buffer, count: Int(copied)), as: UTF16.self)

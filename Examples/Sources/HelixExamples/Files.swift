@@ -20,13 +20,13 @@ struct FilesCommand: ParsableCommand {
     @Option(name: .shortAndLong, help: "Source directory")
     var source: String = "."
 
-    @Option(name: .short('o'), help: "Output directory")
+    @Option(name: .short("o"), help: "Output directory")
     var output: String?
 
-    @Flag(name: .short('r'), help: "Recursively process directories")
+    @Flag(name: .short("r"), help: "Recursively process directories")
     var recursive: Bool = false
 
-    @Flag(name: .short('v'), help: "Verbose output")
+    @Flag(name: .short("v"), help: "Verbose output")
     var verbose: Bool = false
 
     @Argument(help: "File patterns to process")
@@ -57,10 +57,10 @@ struct FilesCommand: ParsableCommand {
 // MARK: - Option Group
 
 struct GlobalFileOptions: HelixParsable {
-    @Flag(name: .short('f'), help: "Force overwrite existing files")
+    @Flag(name: .short("f"), help: "Force overwrite existing files")
     var force: Bool = false
 
-    @Option(name: .short('e'), help: "Encoding (utf-8, ascii, etc.)")
+    @Option(name: .short("e"), help: "Encoding (utf-8, ascii, etc.)")
     var encoding: String = "utf-8"
 }
 

@@ -4,3 +4,4 @@
 /.build/*
 /.build/arm64-apple-macosx
 /.helix-plan.json
+.tmp/

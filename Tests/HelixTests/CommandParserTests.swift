@@ -56,6 +56,26 @@ final class CommandParserTests: XCTestCase {
         XCTAssertEqual(values.options["output"], ["result.txt"])
     }
 
+    func testParseLongOptionWithEmptyValue() throws {
+        var signature = CommandSignature()
+        Option<String>(name: .longName("output"), help: "Output file").register(label: "output", signature: &signature)
+
+        let parser = CommandParser(signature: signature)
+        let values = try parser.parse(arguments: ["--output="])
+
+        XCTAssertEqual(values.options["output"], [""])
+    }
+
+    func testParseLongOptionPreservesValueWithEmbeddedEquals() throws {
+        var signature = CommandSignature()
+        Option<String>(name: .longName("map"), help: "map entry").register(label: "map", signature: &signature)
+
+        let parser = CommandParser(signature: signature)
+        let values = try parser.parse(arguments: ["--map=a=b"])
+
+        XCTAssertEqual(values.options["map"], ["a=b"])
+    }
+
     func testParseShortOption() throws {
         var signature = CommandSignature()
         Option<String>(name: .short(Character("o")), help: "Output file").register(label: "output", signature: &signature)
@@ -74,6 +94,26 @@ final class CommandParserTests: XCTestCase {
         let values = try parser.parse(arguments: ["-o=result.txt"])
 
         XCTAssertEqual(values.options["output"], ["result.txt"])
+    }
+
+    func testParseShortOptionWithEmptyValue() throws {
+        var signature = CommandSignature()
+        Option<String>(name: .short(Character("o")), help: "Output file").register(label: "output", signature: &signature)
+
+        let parser = CommandParser(signature: signature)
+        let values = try parser.parse(arguments: ["-o="])
+
+        XCTAssertEqual(values.options["output"], [""])
+    }
+
+    func testParseShortOptionWithConcatenatedValueIsNotSupported() throws {
+        var signature = CommandSignature()
+        Option<String>(name: .short(Character("o")), help: "Output file").register(label: "output", signature: &signature)
+
+        let parser = CommandParser(signature: signature)
+        XCTAssertThrowsError(try parser.parse(arguments: ["-ofile"])) { error in
+            XCTAssertEqual(error as? HelixError, .parsingError("Unknown option -o"))
+        }
     }
 
     func testParseShortAndLongOption() throws {
@@ -111,6 +151,17 @@ final class CommandParserTests: XCTestCase {
         }
     }
 
+    func testParseOptionMissingValueBeforeTerminatorThrows() throws {
+        var signature = CommandSignature()
+        Option<String>(name: .automatic, help: "Option").register(label: "option", signature: &signature)
+
+        let parser = CommandParser(signature: signature)
+
+        XCTAssertThrowsError(try parser.parse(arguments: ["--option", "--"])) { error in
+            XCTAssertEqual(error as? HelixError, .parsingError("Missing value for option option"))
+        }
+    }
+
     // MARK: - Flags
 
     func testParseFlag() throws {
@@ -144,6 +195,16 @@ final class CommandParserTests: XCTestCase {
         // -x is parsed as an option with value "x" since -x could be short for --x
         XCTAssertThrowsError(try parser.parse(arguments: ["-x"])) { error in
             XCTAssertEqual(error as? HelixError, .parsingError("Unknown option --x"))
+        }
+    }
+
+    func testParseFlagClusterWithUnknownFlagThrows() throws {
+        var signature = CommandSignature()
+        Flag(name: .short(Character("v"))).register(label: "verbose", signature: &signature)
+
+        let parser = CommandParser(signature: signature)
+        XCTAssertThrowsError(try parser.parse(arguments: ["-vx"])) { error in
+            XCTAssertEqual(error as? HelixError, .parsingError("Unknown option -x"))
         }
     }
 

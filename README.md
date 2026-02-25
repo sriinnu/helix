@@ -162,18 +162,18 @@ var verbose: Int = 0
 var config: String = "config.json"
 
 // Custom names
-@Option(name: .short('o'), help: "Output file")
+@Option(name: .short("o"), help: "Output file")
 var outputFile: String
 
 @Option(name: .longName("output-dir"), help: "Directory for output")
 var outputDirectory: String
 
 // Multiple names
-@Option(names: [.short('v'), .longName("verbose")], help: "Verbose output")
-var verboseMode: Bool = false
+@Option(names: [.short("v"), .longName("verbose")], help: "Verbosity level (0-3)")
+var verboseLevel: Int = 0
 
 // Environment variable fallback
-@Option(name: .shortAndLong, envVar: "API_KEY", help: "API key")
+@Option(name: .shortAndLong, help: "API key (can use API_KEY env var)", envVar: "API_KEY")
 var apiKey: String?
 ```
 
@@ -207,7 +207,7 @@ Flags are boolean options that don't take values:
 var debug: Bool = false
 
 // Short form
-@Flag(name: .short('v'), help: "Verbose output")
+@Flag(name: .short("v"), help: "Verbose output")
 var verbose: Bool = false
 
 // Long form
@@ -245,21 +245,25 @@ struct MyCommand: ParsableCommand {
 }
 ```
 
-When parsing manually, pass `Self.descriptor.signature.flattened()` to `CommandParser` to include options from option groups.
-`ParsableCommand.main()` already uses flattened signatures; the note above only applies if you instantiate `CommandParser` manually.
+When parsing manually, pass `Self.descriptor.signature` to `CommandParser`.
+The descriptor is already flattened, so option-group options are included.
+`ParsableCommand.main()` uses this same descriptor path automatically.
 
 ### Name Specification Options
 
 | Specification | Generated Names | Example |
 |--------------|-----------------|---------|
 | `.automatic` | `--property-name` | `--output-file` |
-| `.short('o')` | `-o` | `-o file.txt` |
+| `.short("o")` | `-o` | `-o file.txt` |
 | `.longName("out")` | `--out` | `--out file.txt` |
 | `.shortAndLong` | `-o`, `--output` | `-o file.txt` / `--output file.txt` |
-| `.customShort('x')` | `-x` | `-x file.txt` |
+| `.customShort("x")` | `-x` | `-x file.txt` |
 | `.customLong("output")` | `--output` | `--output file.txt` |
 
-Note: `--name=value` and `-o=value` are supported. Joined short option values (e.g. `-ovalue`) are not supported.
+Notes:
+- `--name=value` and `-o=value` are supported.
+- Short flag clusters are supported for flags (for example, `-vf` for `-v` and `-f`).
+- Joined short option values (e.g. `-ovalue`) are not supported.
 
 ---
 
@@ -426,7 +430,11 @@ $ git commit -m "Fix bug"
 $ git push origin main
 ```
 
-`ParsableCommand.main()` dispatches to subcommands automatically. When you run the executable, you typically do not need to include the root command name as the first argument.
+`ParsableCommand.main()` dispatches to subcommands automatically.
+When you have a single root command, you usually do not need to include the root command name as the first argument.
+If the root has a `defaultSubcommand`, that subcommand runs when no explicit subcommand is provided.
+If `showHelpOnEmptyInvocation` is `true`, empty input shows help instead of routing to the default subcommand.
+If multiple roots exist, the first argument must select the root command.
 
 ### Default Subcommand
 
@@ -459,11 +467,12 @@ Helix runs on multiple platforms with a unified API:
 | tvOS | 17.0+ | ✅ Full Support |
 | watchOS | 10.0+ | ✅ Full Support |
 | visionOS | 1.0+ | ✅ Full Support |
-| Linux | - | ✅ Supported (CI) |
-| Windows | - | ✅ Supported (CI) |
-| WASI | - | ⚠️ Supported (not covered by CI here) |
+| Linux | - | ⚠️ Source-supported via `LinuxPlatformContext` (validate in CI/use-case) |
+| Windows | - | ⚠️ Source-supported via `WindowsPlatformContext` |
+| WASI | - | ⚠️ Source-supported via `WebPlatformContext` (limited features) |
 
 Platform contexts live in `Sources/Helix/Platform` and are selected via compile-time checks.
+WASI support is present via `WebPlatformContext`, but it is intentionally constrained (for example, `exit(code:)` traps and `currentWorkingDirectory` is rooted at `/`).
 
 ### Platform Context
 
@@ -518,7 +527,7 @@ let home = PlatformPath.homeDirectory
 
 ### Custom Platform Context
 
-Create mock contexts for testing:
+Use local test-only helpers; `MockPlatformContext` currently lives in `Tests/HelixTests/MockPlatformContext.swift`:
 
 ```swift
 let mockContext = MockPlatformContext(
@@ -557,13 +566,31 @@ swift test
 
 ### Mock Platform Context
 
-Use `MockPlatformContext` for deterministic testing:
+`MockPlatformContext` is test-only in this repo. For general docs, use a local stub:
 
 ```swift
-let ctx = MockPlatformContext(
-    arguments: ["cmd", "arg1", "arg2"],
+private struct DemoPlatformContext: PlatformContext {
+    let environment: [String: String]
+    let arguments: [String]
+    let currentWorkingDirectory: PlatformPath
+
+    func environmentVariable(_ name: String) -> String? { environment[name] }
+    var stdin: StdioStream { BufferStdioStream() }
+    var stdout: StdioStream { BufferStdioStream() }
+    var stderr: StdioStream { BufferStdioStream() }
+    func exit(code: Int32) -> Never {
+        preconditionFailure("exit(code:) called: \(code)")
+    }
+}
+```
+
+Then use it in tests:
+
+```swift
+let ctx = DemoPlatformContext(
     environment: ["KEY": "value"],
-    currentDirectory: "/test"
+    arguments: ["cmd", "arg1", "arg2"],
+    currentWorkingDirectory: PlatformPath("/test")
 )
 
 // Verify environment
@@ -720,7 +747,7 @@ public struct ValidationError: Error, LocalizedError, Sendable {
 import ArgumentParser
 
 struct Math: ParsableCommand {
-    @Option(name: .short)
+    @Option(name: .short("o"))
     var operation: String
 
     @Argument
@@ -738,7 +765,7 @@ struct Math: ParsableCommand {
 import Helix
 
 struct MathCommand: ParsableCommand {
-    @Option(name: .short('o'), help: "Operation")
+    @Option(name: .short("o"), help: "Operation")
     var operation: String
 
     @Argument(help: "Numbers to process")
@@ -818,10 +845,10 @@ struct CommonOptions: HelixParsable {
     @Flag(name: .shortAndLong, help: "Verbose output")
     var verbose: Bool = false
 
-    @Option(name: .short('o'), help: "Output file")
+    @Option(name: .short("o"), help: "Output file")
     var output: String?
 
-    @Flag(name: .short('f'), help: "Force overwrite")
+    @Flag(name: .short("f"), help: "Force overwrite")
     var force: Bool = false
 }
 
@@ -912,6 +939,9 @@ Helix supports built-in help and version handling:
 
 - `-h` / `--help` prints help and exits before running command logic.
 - `-V` / `--version` prints `CommandDescription.version` (if set) and exits before running command logic.
+  - If no `version` is configured, `--version` prints nothing.
+- Help/version flags are reserved globally. They are handled before normal argument parsing (including option/argument binding) and before subcommand validation.
+- Help/version tokens are recognized before normal argument parsing, even if they appear after `--` terminator tokens.
 - `CommandDescription.showHelpOnEmptyInvocation = true` prints help when invoked with no arguments.
 
 ```swift
@@ -970,7 +1000,7 @@ Helix is released under the MIT License. See [LICENSE](LICENSE) for details.
 
 Inspired by:
 - [Swift ArgumentParser](https://github.com/apple/swift-argument-parser)
-- [Commander](https://github.com/kylef/Commander.swift)
+- [Commander](https://github.com/kylef/Commander)
 
 ---
 

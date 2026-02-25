@@ -9,16 +9,28 @@ struct ConfigCommand: ParsableCommand {
         )
     }
 
-    @Option(name: .shortAndLong, envVar: "API_KEY", help: "API key (can use API_KEY env var)")
+    @Option(
+        name: .shortAndLong,
+        help: "API key (can use API_KEY env var)",
+        envVar: "API_KEY"
+    )
     var apiKey: String?
 
-    @Option(name: .shortAndLong, envVar: "DATABASE_URL", help: "Database connection URL")
+    @Option(
+        name: .shortAndLong,
+        help: "Database connection URL",
+        envVar: "DATABASE_URL"
+    )
     var databaseURL: String?
 
-    @Option(name: .shortAndLong, envVar: "LOG_LEVEL", help: "Logging level")
+    @Option(
+        name: .shortAndLong,
+        help: "Logging level",
+        envVar: "LOG_LEVEL"
+    )
     var logLevel: String = "info"
 
-    @Flag(name: .short('v'), help: "Show resolved configuration")
+    @Flag(name: .short("v"), help: "Show resolved configuration")
     var showValues: Bool = false
 
     mutating func run() async throws {

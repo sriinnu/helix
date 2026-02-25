@@ -171,12 +171,33 @@ public struct Program: Sendable {
         if descriptorLookup[first] != nil {
             return args
         }
-        let looksLikeExecutable = first.contains("/") || first.contains("\\") || first.hasSuffix(".exe")
-        let nextIsCommand = args.count > 1 && descriptorLookup[args[1]] != nil
-        if looksLikeExecutable || nextIsCommand {
+        let executableToken = first.lowercased()
+        let looksLikeExecutable = first.contains("/") || first.contains("\\") ||
+            executableToken.hasSuffix(".exe") || executableToken.hasSuffix(".bat") || executableToken.hasSuffix(".cmd")
+        let looksLikeExecutableName = Self.lastPathComponent(first)
+        let looksLikeExecutableNameWithoutExtension = Self.stripExecutableExtension(looksLikeExecutableName)
+        let firstTokenMatchesCommand = !looksLikeExecutableName.isEmpty &&
+            (descriptorLookup[looksLikeExecutableName] != nil || descriptorLookup[looksLikeExecutableNameWithoutExtension] != nil)
+        if looksLikeExecutable && firstTokenMatchesCommand {
             args.removeFirst()
         }
         return args
+    }
+
+    private static func lastPathComponent(_ path: String) -> String {
+        let parts = path.split { $0 == "/" || $0 == "\\" }
+        return parts.last.map(String.init) ?? path
+    }
+
+    private static func stripExecutableExtension(_ name: String) -> String {
+        let lower = name.lowercased()
+        for suffix in [".exe", ".bat", ".cmd"] {
+            if lower.hasSuffix(suffix) {
+                let end = name.index(name.endIndex, offsetBy: -suffix.count)
+                return String(name[..<end])
+            }
+        }
+        return name
     }
 
     private func selectRootCommand(arguments: inout [String]) throws -> CommandDescriptor? {

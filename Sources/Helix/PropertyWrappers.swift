@@ -305,10 +305,18 @@ extension Option: _HelixOptionBinding {
         }
 
         if let envVar, let envValue = environment[envVar] {
-            guard let parsed = Value(argument: envValue) else {
-                throw HelixError.parsingError("Invalid value for environment variable \(envVar)")
+            if let parser = Value.self as? _HelixOptionMultiValueParser.Type {
+                let parts = envValue.split(separator: ",").map(String.init)
+                guard let parsed = parser._helixParseOption(values: parts) as? Value else {
+                    throw HelixError.parsingError("Invalid value for environment variable \(envVar)")
+                }
+                box.environmentValue = parsed
+            } else {
+                guard let parsed = Value(argument: envValue) else {
+                    throw HelixError.parsingError("Invalid value for environment variable \(envVar)")
+                }
+                box.environmentValue = parsed
             }
-            box.environmentValue = parsed
         }
 
         let isOptional = Value.self is OptionalProtocol.Type

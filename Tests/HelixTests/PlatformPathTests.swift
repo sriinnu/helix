@@ -48,6 +48,8 @@ final class PlatformPathTests: XCTestCase {
         XCTAssertTrue(PlatformPath("/absolute/path").isAbsolute)
         #if os(Windows)
         XCTAssertTrue(PlatformPath("C:\\path").isAbsolute)
+        XCTAssertTrue(PlatformPath("C:/path").isAbsolute)
+        XCTAssertFalse(PlatformPath("C:relative\\path").isAbsolute)
         XCTAssertTrue(PlatformPath("\\path").isAbsolute)
         #else
         XCTAssertFalse(PlatformPath("relative/path").isAbsolute)

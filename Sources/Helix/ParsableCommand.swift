@@ -97,7 +97,6 @@ extension ParsableCommand {
         var helpRequested = false
         var versionRequested = false
         for argument in arguments {
-            if argument == "--" { break }
             switch argument {
             case "-h", "--help":
                 helpRequested = true

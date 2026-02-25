@@ -40,7 +40,7 @@ struct InitCommand: ParsableCommand {
     @Option(name: .shortAndLong, help: "Project template")
     var template: String = "default"
 
-    @Flag(name: .short('f'), help: "Force initialization (overwrite)")
+    @Flag(name: .short("f"), help: "Force initialization (overwrite)")
     var force: Bool = false
 
     @Argument(help: "Project name")
@@ -66,10 +66,10 @@ struct BuildCommand: ParsableCommand {
     @Option(name: .shortAndLong, help: "Build configuration")
     var configuration: String = "debug"
 
-    @Option(name: .short('p'), help: "Platform (macos, ios, linux)")
+    @Option(name: .short("p"), help: "Platform (macos, ios, linux)")
     var platform: String = "macos"
 
-    @Flag(name: .short('v'), help: "Verbose build output")
+    @Flag(name: .short("v"), help: "Verbose build output")
     var verbose: Bool = false
 
     mutating func run() async throws {
@@ -91,10 +91,10 @@ struct TestCommand: ParsableCommand {
     @Option(name: .shortAndLong, help: "Test filter")
     var filter: String?
 
-    @Flag(name: .short('x'), help: "Fail fast (stop on first failure)")
+    @Flag(name: .short("x"), help: "Fail fast (stop on first failure)")
     var failFast: Bool = false
 
-    @Flag(name: .short('c'), help: "Collect code coverage")
+    @Flag(name: .short("c"), help: "Collect code coverage")
     var coverage: Bool = false
 
     mutating func run() async throws {
@@ -118,10 +118,10 @@ struct DeployCommand: ParsableCommand {
     @Option(name: .shortAndLong, help: "Target environment")
     var environment: String = "staging"
 
-    @Option(name: .short('t'), help: "Timeout in seconds")
+    @Option(name: .short("t"), help: "Timeout in seconds")
     var timeout: Int = 300
 
-    @Flag(name: .short('d'), help: "Dry run (no actual deployment)")
+    @Flag(name: .short("d"), help: "Dry run (no actual deployment)")
     var dryRun: Bool = false
 
     mutating func run() async throws {

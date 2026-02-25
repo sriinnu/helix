@@ -145,6 +145,112 @@ private struct ExtraPositionalsCommand: ParsableCommand {
     mutating func run() async throws {}
 }
 
+private struct InvalidIntOptionCommand: ParsableCommand {
+    static var commandDescription: CommandDescription {
+        CommandDescription(commandName: "invalid-int-option")
+    }
+
+    @Option
+    var count: Int
+
+    init() {}
+
+    mutating func run() async throws {}
+}
+
+private struct InvalidIntArgumentCommand: ParsableCommand {
+    static var commandDescription: CommandDescription {
+        CommandDescription(commandName: "invalid-int-argument")
+    }
+
+    @Argument
+    var number: Int
+
+    init() {}
+
+    mutating func run() async throws {}
+}
+
+private struct InvalidIntArrayOptionCommand: ParsableCommand {
+    static var commandDescription: CommandDescription {
+        CommandDescription(commandName: "invalid-int-array-option")
+    }
+
+    @Option(wrappedValue: [])
+    var values: [Int]
+
+    init() {}
+
+    mutating func run() async throws {}
+}
+
+private struct MissingArrayOptionCommand: ParsableCommand {
+    static var commandDescription: CommandDescription {
+        CommandDescription(commandName: "missing-array-option")
+    }
+
+    @Option
+    var values: [Int]
+
+    init() {}
+
+    mutating func run() async throws {}
+}
+
+private struct RepeatedArrayOptionCommand: ParsableCommand {
+    struct Captured: Sendable, Equatable {
+        let values: [Int]
+    }
+
+    @MainActor
+    static var captured: Captured?
+
+    static var commandDescription: CommandDescription {
+        CommandDescription(commandName: "repeated-array-option")
+    }
+
+    @Option(wrappedValue: [])
+    var values: [Int]
+
+    init() {}
+
+    mutating func run() async throws {
+        Self.captured = Captured(values: values)
+    }
+}
+
+private struct ValidateCountCommand: ParsableCommand {
+    struct Captured: Sendable, Equatable {
+        let count: Int
+    }
+
+    @MainActor
+    static var captured: Captured?
+
+    @MainActor
+    static var runCount = 0
+
+    static var commandDescription: CommandDescription {
+        CommandDescription(commandName: "validate-command")
+    }
+
+    @Option
+    var count: Int
+
+    init() {}
+
+    mutating func validate() throws {
+        if count <= 0 {
+            throw ValidationError("count must be non-negative")
+        }
+    }
+
+    mutating func run() async throws {
+        Self.runCount += 1
+        Self.captured = Captured(count: count)
+    }
+}
+
 final class ParsableCommandBindingTests: XCTestCase {
 
     @MainActor
@@ -230,5 +336,72 @@ final class ParsableCommandBindingTests: XCTestCase {
             XCTAssertEqual(error as? HelixError, .parsingError("Unexpected arguments: extra"))
         }
     }
-}
 
+    @MainActor
+    func testInvalidIntOptionThrowsParsingError() async {
+        do {
+            try await InvalidIntOptionCommand.main(arguments: ["invalid-int-option", "--count", "not-a-number"])
+            XCTFail("Expected parsing error")
+        } catch {
+            XCTAssertEqual(error as? HelixError, .parsingError("Invalid value for option count"))
+        }
+    }
+
+    @MainActor
+    func testInvalidIntArgumentThrowsParsingError() async {
+        do {
+            try await InvalidIntArgumentCommand.main(arguments: ["invalid-int-argument", "not-a-number"])
+            XCTFail("Expected parsing error")
+        } catch {
+            XCTAssertEqual(error as? HelixError, .parsingError("Invalid value for argument number"))
+        }
+    }
+
+    @MainActor
+    func testInvalidIntArrayOptionThrowsParsingError() async {
+        do {
+            try await InvalidIntArrayOptionCommand.main(arguments: ["invalid-int-array-option", "--values", "1,2,x"])
+            XCTFail("Expected parsing error")
+        } catch {
+            XCTAssertEqual(error as? HelixError, .parsingError("Invalid value for option values"))
+        }
+    }
+
+    @MainActor
+    func testMissingRequiredArrayOptionThrowsParsingError() async {
+        do {
+            try await MissingArrayOptionCommand.main(arguments: ["missing-array-option"])
+            XCTFail("Expected parsing error")
+        } catch {
+            XCTAssertEqual(error as? HelixError, .parsingError("Missing value for option values"))
+        }
+    }
+
+    @MainActor
+    func testRepeatedArrayOptionValuesAreFlattenedAndParsed() async throws {
+        RepeatedArrayOptionCommand.captured = nil
+
+        try await RepeatedArrayOptionCommand.main(
+            arguments: ["repeated-array-option", "--values", "1,2", "--values", "3"]
+        )
+
+        XCTAssertEqual(
+            RepeatedArrayOptionCommand.captured,
+            .init(values: [1, 2, 3])
+        )
+    }
+
+    @MainActor
+    func testValidateMethodRunsBeforeRun() async {
+        ValidateCountCommand.runCount = 0
+        ValidateCountCommand.captured = nil
+
+        do {
+            try await ValidateCountCommand.main(arguments: ["validate-command", "--count", "0"])
+            XCTFail("Expected validation error")
+        } catch {
+            XCTAssertEqual(ValidateCountCommand.runCount, 0)
+            XCTAssertEqual(error.localizedDescription, "count must be non-negative")
+        }
+    }
+}

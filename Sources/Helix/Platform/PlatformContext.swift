@@ -78,6 +78,7 @@ extension PlatformContext {
             current = current.advanced(by: length + 1)
         }
         #else
+        #if canImport(Darwin) || canImport(Glibc) || canImport(Musl)
         var current = environ
         while let entry = current.pointee {
             if let str = String(validatingCString: entry) {
@@ -88,6 +89,13 @@ extension PlatformContext {
             }
             current = current.advanced(by: 1)
         }
+        #else
+        #if canImport(Foundation)
+        for (key, value) in ProcessInfo.processInfo.environment {
+            result[key] = value
+        }
+        #endif
+        #endif
         #endif
         return result
     }

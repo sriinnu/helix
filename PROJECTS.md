@@ -14,7 +14,7 @@ struct HarborCommand: ParsableCommand {
     @Option(name: .shortAndLong, help: "Registry URL")
     var registry: String = "docker.io"
 
-    @Flag(name: .short('v'), help: "Verbose output")
+    @Flag(name: .short("v"), help: "Verbose output")
     var verbose: Bool = false
 
     mutating func run() async throws {
@@ -59,7 +59,7 @@ struct GitForgeCommand: ParsableCommand {
     @Argument(help: "Repository path")
     var repository: String
 
-    @Flag(name: .short('v'), help: "Verbose")
+    @Flag(name: .short("v"), help: "Verbose")
     var verbose: Bool = false
 }
 ```
@@ -95,10 +95,10 @@ struct ConfigGenCommand: ParsableCommand {
     @Option(name: .shortAndLong, help: "Template file")
     var template: String
 
-    @Option(name: .short('o'), help: "Output file")
+    @Option(name: .short("o"), help: "Output file")
     var output: String?
 
-    @Flag(name: .short('e'), help: "Expand environment variables")
+    @Flag(name: .short("e"), help: "Expand environment variables")
     var expandEnv: Bool = true
 }
 ```

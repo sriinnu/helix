@@ -15,6 +15,9 @@ let package = Package(
         .tvOS(.v17),
         .watchOS(.v10),
         .visionOS(.v1),
+        .custom("linux", versionString: "0"),
+        .custom("windows", versionString: "10"),
+        .custom("wasi", versionString: "0"),
     ],
     products: [
         .library(name: "Helix", targets: ["Helix"]),

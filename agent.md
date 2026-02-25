@@ -6,7 +6,7 @@ This document provides specialized guidance for developing and maintaining the *
 
 Helix is a lightweight, declarative CLI framework inspired by Swift ArgumentParser. It uses Swift's property wrappers and reflection to create elegant command-line interfaces with zero external dependencies.
 
-- **Platforms**: macOS 14+, iOS 17+, tvOS 17+, watchOS 10+, visionOS 1+, plus Linux, Windows, and WASI support via platform contexts in `Sources/Helix/Platform`
+- **Platforms**: macOS 14+, iOS 17+, tvOS 17+, watchOS 10+, visionOS 1+, plus Linux and Windows, with WASI support via `Sources/Helix/Platform` (`WebPlatformContext`, which is intentionally constrained: `exit(code:)` traps and cwd is `/`).
 - **Language**: Swift 6 (strict concurrency)
 - **Structure**: Single-target library in `Sources/Helix/`
 
@@ -52,6 +52,11 @@ CommandLine.arguments
 ```
 
 Note: When `Program` is initialized with a single root descriptor, `Program.resolve` can select it even if `argv` does not include the root command name. If multiple root descriptors exist, the first argument must select the root command.
+Built-in help/version handling is reserved globally:
+- `-h` / `--help` prints help and exits before command binding/validation.
+- `-V` / `--version` prints `CommandDescription.version` and exits before command binding/validation.
+- If `version` is not configured, `--version` produces no output.
+These tokens are detected before normal argument parsing, so you cannot use custom `-h`/`--help`/`-V`/`--version` options in command definitions.
 
 ## Development Patterns
 
@@ -69,7 +74,7 @@ struct MyCommand: ParsableCommand {
     @Argument(help: "Input files")
     var inputs: [String]
 
-    @Flag(name: .short, help: "Verbose output")
+    @Flag(name: .short("v"), help: "Verbose output")
     var verbose: Bool = false
 
     mutating func run() async throws {
@@ -89,15 +94,15 @@ try await MyCommand.main()
 | `@Flag` | Boolean switches |
 | `@OptionGroup<Value>` | Reusable option groups |
 
-When parsing manually, use `Self.descriptor.signature.flattened()` so option groups are included in `CommandParser`.
+When parsing manually, use `Self.descriptor.signature` so `CommandParser` receives the already-flattened signature that includes option groups.
 
 ### Name Specification Options
 
 - `.automatic` → `--property-name`
-- `.short('n')` → `-n`
+- `.short("n")` → `-n`
 - `.longName("name")` → `--name`
 - `.shortAndLong` → `-n / --name`
-- `.customShort('x')` → `-x value`
+- `.customShort("x")` → `-x value`
 
 Note: `--name=value` and `-n=value` are supported. Joined short option values (e.g. `-nvalue`) are not supported.
 
